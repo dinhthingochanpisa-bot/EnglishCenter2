@@ -1,0 +1,75 @@
+name: stage01-saas-core-ci
+on:
+  push:
+  pull_request:
+jobs:
+  postgres-and-apps:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-disposable-only
+          POSTGRES_DB: lms_crm_stage01
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lms_crm_stage01"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGDATABASE: lms_crm_stage01
+      PGUSER: postgres
+      PGPASSWORD: ci-disposable-only
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install PostgreSQL client
+        run: command -v psql || (sudo apt-get update && sudo apt-get install -y postgresql-client)
+      - name: Setup role accounts
+        run: |
+          psql -X -v ON_ERROR_STOP=1 \
+            -v runtime_pass='ci-runtime-only' \
+            -v identity_pass='ci-identity-only' \
+            -v operator_pass='ci-operator-only' \
+            -f infra/postgres/bootstrap-roles.sql
+      - name: Backend dependencies and schema validation
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:ci-disposable-only@127.0.0.1:5432/lms_crm_stage01
+        run: |
+          npm install --no-audit --no-fund
+          npm run prisma:generate
+          npm run prisma:validate
+          npm run db:migrate
+          ALLOW_DEMO_SEED=true NODE_ENV=test npm run db:seed:demo
+          npm run typecheck
+          npm run build
+          npm test
+      - name: PostgreSQL tenant isolation + FK tests
+        run: |
+          PGUSER=app_runtime PGPASSWORD='ci-runtime-only' psql -X -v ON_ERROR_STOP=1 -f verification/rls_smoke.sql
+          PGUSER=app_runtime PGPASSWORD='ci-runtime-only' psql -X -v ON_ERROR_STOP=1 -f verification/rls_and_grants_additional.sql
+          psql -X -v ON_ERROR_STOP=1 -f verification/composite_fk_smoke.sql
+      - name: Frontend dependencies and build
+        working-directory: frontend
+        env:
+          APP_ORIGIN: http://localhost:3000
+          BACKEND_URL: http://localhost:3001
+          OIDC_ISSUER: https://idp.example/realms/lms
+          OIDC_CLIENT_ID: lms-web
+          SESSION_SECRET_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm run build
+      - name: Additional source-level tests
+        run: |
+          node verification/verify_static.mjs
+          node verification/verify_logic.mjs

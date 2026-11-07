@@ -1,0 +1,22 @@
+# Disposable local environment. NOT a production deployment.
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    container_name: lmscrm_local_keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: local-admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: http://localhost:18080
+      KC_HTTP_ENABLED: 'true'
+    ports:
+      - '127.0.0.1:18080:8080'
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import:ro
+    mem_limit: 1g
+    healthcheck:
+      test: ['CMD-SHELL','/opt/keycloak/bin/kc.sh show-config >/dev/null']
+      interval: 10s
+      retries: 15
+      start_period: 30s
+    restart: 'no'

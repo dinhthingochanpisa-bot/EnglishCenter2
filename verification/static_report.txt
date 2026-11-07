@@ -1,0 +1,17 @@
+PASS TypeScript/TSX parser – 26 files; 0 syntax errors
+PASS Stage01 baseline schema – Found 14 CREATE TABLE statements
+PASS Tenant RLS policy coverage
+PASS Composite tenant foreign keys
+PASS Append-only audit trigger
+PASS Runtime role grants migrated
+PASS Global identity not granted to runtime
+PASS Restricted identity role
+PASS OIDC code + PKCE + nonce
+PASS Encrypted HttpOnly session
+PASS Backend only proxy with Bearer
+PASS No direct database in frontend
+PASS Permission snapshot endpoint
+PASS Role revocation endpoints
+PASS Audit atomic with transaction
+
+15/15 static checks passed

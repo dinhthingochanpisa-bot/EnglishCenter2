@@ -1,0 +1,11 @@
+PASS Cookie payload does not contain plaintext token
+PASS AES-GCM decrypt roundtrip
+PASS Modified cookie rejected
+PASS Valid cookie session accepted
+PASS Expired session rejected
+PASS Valid UUID accepted
+PASS Invalid UUID rejected
+PASS Client-side UUID helper recognizes valid UUID
+PASS Client-side UUID helper rejects traversal
+
+9/9 isolated logic tests passed

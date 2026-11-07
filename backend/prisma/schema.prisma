@@ -1,0 +1,457 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// DB migrations are the source of truth for RLS, grants and audit immutability.
+// Never run queries against tenant tables as the owner/migration role.
+model Tenant {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code         String   @unique @db.VarChar(64)
+  legalName    String   @map("legal_name")
+  displayName  String   @map("display_name")
+  status       String   @default("ONBOARDING") @db.VarChar(32)
+  timezone     String   @default("Asia/Ho_Chi_Minh") @db.VarChar(80)
+  baseCurrency String   @default("VND") @map("base_currency") @db.Char(3)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  branches     Branch[]
+  memberships  TenantMembership[]
+  roles        Role[]
+  settings     TenantSetting[]
+  subscriptions TenantSubscription[]
+  @@map("tenants")
+}
+
+model Branch {
+  id        String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  code      String   @db.VarChar(64)
+  name      String
+  timezone  String?  @db.VarChar(80)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  rowVersion Int @default(1) @map("row_version")
+  tenant    Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  scopes    MembershipBranchScope[]
+  @@id([id])
+  @@unique([tenantId, id])
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive])
+  @@map("branches")
+}
+
+model PlatformUser {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authSubject String @unique @map("auth_subject")
+  email      String?
+  displayName String  @map("display_name")
+  status     String   @default("ACTIVE") @db.VarChar(32)
+  mfaEnforced Boolean @default(false) @map("mfa_enforced")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  memberships TenantMembership[]
+  @@map("platform_users")
+}
+
+model TenantMembership {
+  id           String   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  employeeCode String?  @map("employee_code") @db.VarChar(64)
+  status       String   @default("INVITED") @db.VarChar(32)
+  joinedAt     DateTime? @map("joined_at") @db.Timestamptz(6)
+  leftAt       DateTime? @map("left_at") @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  rowVersion   Int @default(1) @map("row_version")
+  tenant       Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  user         PlatformUser @relation(fields: [userId], references: [id], onDelete: Restrict)
+  roles        MembershipRole[]
+  branchScopes MembershipBranchScope[]
+  @@id([id])
+  @@unique([tenantId, id])
+  @@unique([tenantId, userId])
+  @@index([tenantId, status])
+  @@map("tenant_memberships")
+}
+
+model Role {
+  id         String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  code       String @db.VarChar(80)
+  name       String
+  systemRole Boolean @default(false) @map("system_role")
+  scopeType  String @default("ASSIGNED_BRANCHES") @map("scope_type") @db.VarChar(40)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  rowVersion Int @default(1) @map("row_version")
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  permissions RolePermission[]
+  memberships MembershipRole[]
+  @@id([id])
+  @@unique([tenantId, id])
+  @@unique([tenantId, code])
+  @@map("roles")
+}
+
+model Permission {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code String @unique @db.VarChar(140)
+  resource String @db.VarChar(80)
+  action String @db.VarChar(80)
+  rolePermissions RolePermission[]
+  @@map("permissions")
+}
+
+model RolePermission {
+  tenantId String @map("tenant_id") @db.Uuid
+  roleId String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+  role Role @relation(fields: [tenantId, roleId], references: [tenantId, id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
+  @@id([tenantId, roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model MembershipRole {
+  id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  membershipId String @map("membership_id") @db.Uuid
+  roleId String @map("role_id") @db.Uuid
+  validFrom DateTime @map("valid_from") @db.Timestamptz(6)
+  validTo DateTime? @map("valid_to") @db.Timestamptz(6)
+  membership TenantMembership @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Cascade)
+  role Role @relation(fields: [tenantId, roleId], references: [tenantId, id], onDelete: Cascade)
+  @@id([id])
+  @@unique([tenantId, id])
+  @@index([tenantId, membershipId, validFrom])
+  @@map("membership_roles")
+}
+
+model MembershipBranchScope {
+  id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  membershipId String @map("membership_id") @db.Uuid
+  branchId String @map("branch_id") @db.Uuid
+  validFrom DateTime @map("valid_from") @db.Timestamptz(6)
+  validTo DateTime? @map("valid_to") @db.Timestamptz(6)
+  membership TenantMembership @relation(fields: [tenantId, membershipId], references: [tenantId, id], onDelete: Cascade)
+  branch Branch @relation(fields: [tenantId, branchId], references: [tenantId, id], onDelete: Restrict)
+  @@id([id])
+  @@unique([tenantId, id])
+  @@index([tenantId, membershipId, validFrom])
+  @@map("membership_branch_scopes")
+}
+
+model TenantSetting {
+  id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  key String @db.VarChar(140)
+  value Json
+  version Int
+  effectiveFrom DateTime @map("effective_from") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  rowVersion Int @default(1) @map("row_version")
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  @@id([id])
+  @@unique([tenantId, id])
+  @@unique([tenantId, key, version])
+  @@map("tenant_settings")
+}
+
+model SubscriptionPlan {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  planCode String @unique @map("plan_code") @db.VarChar(80)
+  name String
+  features Json @default("{}")
+  limits Json @default("{}")
+  status String @default("ACTIVE") @db.VarChar(32)
+  subscriptions TenantSubscription[]
+  @@map("subscription_plans")
+}
+
+model TenantSubscription {
+  id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  planId String @map("plan_id") @db.Uuid
+  status String @db.VarChar(32)
+  startedAt DateTime @map("started_at") @db.Timestamptz(6)
+  endedAt DateTime? @map("ended_at") @db.Timestamptz(6)
+  billingCycle String? @map("billing_cycle") @db.VarChar(32)
+  providerRef String? @map("provider_ref")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  rowVersion Int @default(1) @map("row_version")
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  plan SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
+  @@id([id])
+  @@unique([tenantId, id])
+  @@index([tenantId, status])
+  @@map("tenant_subscriptions")
+}
+
+model SupportGrant {
+  id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  platformOperatorUserId String @map("platform_operator_user_id") @db.Uuid
+  approvedByUserId String @map("approved_by_user_id") @db.Uuid
+  reason String
+  validFrom DateTime @map("valid_from") @db.Timestamptz(6)
+  validTo DateTime @map("valid_to") @db.Timestamptz(6)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(6)
+  ticketRef String? @map("ticket_ref")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+  rowVersion Int @default(1) @map("row_version")
+  @@id([id])
+  @@unique([tenantId, id])
+  @@index([tenantId, validTo])
+  @@map("support_grants")
+}
+
+model AuditLog {
+  id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId String @map("tenant_id") @db.Uuid
+  actorUserId String? @map("actor_user_id") @db.Uuid
+  action String @db.VarChar(140)
+  resourceType String @map("resource_type") @db.VarChar(100)
+  resourceId String @map("resource_id") @db.Uuid
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  beforeData Json? @map("before_data")
+  afterData Json? @map("after_data")
+  reason String?
+  requestId String? @map("request_id") @db.Uuid
+  ipHash String? @map("ip_hash")
+  @@id([id])
+  @@unique([tenantId, id])
+  @@index([tenantId, occurredAt(sort: Desc)])
+  @@index([tenantId, resourceType, resourceId])
+  @@map("audit_logs")
+}
+
+// Stage 02 – Customer master and CRM. All tenant-owned relations have composite
+// foreign keys in SQL migrations, even when no Prisma relation is declared here.
+model CrmPerson {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ fullName String @map("full_name") @db.VarChar(240)
+ normalizedName String @map("normalized_name") @db.VarChar(240)
+ dateOfBirth DateTime? @map("date_of_birth") @db.Date
+ gender String? @db.VarChar(24)
+ schoolName String? @map("school_name") @db.VarChar(240)
+ schoolGrade String? @map("school_grade") @db.VarChar(40)
+ address String?
+ status String @default("PROSPECT") @db.VarChar(32)
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+ rowVersion Int @default(1) @map("row_version")
+ @@id([id])
+ @@unique([tenantId,id])
+ @@index([tenantId,normalizedName])
+ @@map("crm_persons")
+}
+model CrmPersonBranch {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ personId String @map("person_id") @db.Uuid
+ branchId String @map("branch_id") @db.Uuid
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@unique([tenantId,personId,branchId])
+ @@index([tenantId,branchId])
+ @@map("crm_person_branches")
+}
+model CrmPersonContact {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ personId String @map("person_id") @db.Uuid
+ kind String @db.VarChar(16)
+ rawValue String @map("raw_value") @db.VarChar(240)
+ normalizedValue String @map("normalized_value") @db.VarChar(240)
+ isPrimary Boolean @default(false) @map("is_primary")
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@index([tenantId,kind,normalizedValue])
+ @@map("crm_person_contacts")
+}
+model CrmStudent {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ personId String @map("person_id") @db.Uuid
+ studentCode String? @map("student_code") @db.VarChar(60)
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@unique([tenantId,personId])
+ @@unique([tenantId,studentCode])
+ @@map("crm_students")
+}
+model CrmStudentGuardian {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ studentId String @map("student_id") @db.Uuid
+ guardianPersonId String @map("guardian_person_id") @db.Uuid
+ relationType String @map("relation_type") @db.VarChar(40)
+ isPrimary Boolean @default(false) @map("is_primary")
+ @@id([id])
+ @@unique([tenantId,id])
+ @@unique([tenantId,studentId,guardianPersonId])
+ @@map("crm_student_guardians")
+}
+model CrmMarketingSource {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ code String @db.VarChar(70)
+ name String @db.VarChar(180)
+ category String @db.VarChar(40)
+ isActive Boolean @default(true) @map("is_active")
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@unique([tenantId,code])
+ @@map("crm_marketing_sources")
+}
+model CrmCampaign {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ code String @db.VarChar(80)
+ name String @db.VarChar(200)
+ sourceId String? @map("source_id") @db.Uuid
+ startAt DateTime? @map("start_at") @db.Timestamptz(6)
+ endAt DateTime? @map("end_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@unique([tenantId,code])
+ @@map("crm_campaigns")
+}
+model CrmLead {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ personId String @map("person_id") @db.Uuid
+ branchId String @map("branch_id") @db.Uuid
+ sourceId String @map("source_id") @db.Uuid
+ campaignId String? @map("campaign_id") @db.Uuid
+ assignedMembershipId String? @map("assigned_membership_id") @db.Uuid
+ contactName String? @map("contact_name") @db.VarChar(240)
+ contactPhone String? @map("contact_phone") @db.VarChar(40)
+ contactPhoneNormalized String? @map("contact_phone_normalized") @db.VarChar(40)
+ status String @default("NEW") @db.VarChar(32)
+ qualifiedAt DateTime? @map("qualified_at") @db.Timestamptz(6)
+ nextFollowupAt DateTime? @map("next_followup_at") @db.Timestamptz(6)
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+ rowVersion Int @default(1) @map("row_version")
+ @@id([id])
+ @@unique([tenantId,id])
+ @@index([tenantId,branchId,status,createdAt])
+ @@index([tenantId,contactPhoneNormalized])
+ @@map("crm_leads")
+}
+model CrmLeadEvent {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ leadId String @map("lead_id") @db.Uuid
+ eventType String @map("event_type") @db.VarChar(45)
+ fromStatus String? @map("from_status") @db.VarChar(32)
+ toStatus String? @map("to_status") @db.VarChar(32)
+ actorUserId String? @map("actor_user_id") @db.Uuid
+ metadata Json @default("{}")
+ occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@index([tenantId,leadId,occurredAt])
+ @@map("crm_lead_events")
+}
+model CrmLeadTouch {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ leadId String @map("lead_id") @db.Uuid
+ sourceId String @map("source_id") @db.Uuid
+ campaignId String? @map("campaign_id") @db.Uuid
+ touchType String @map("touch_type") @db.VarChar(40)
+ occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@index([tenantId,leadId,occurredAt])
+ @@map("crm_lead_touches")
+}
+model CrmLeadActivity {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ leadId String @map("lead_id") @db.Uuid
+ actorUserId String @map("actor_user_id") @db.Uuid
+ kind String @db.VarChar(35)
+ note String
+ outcome String? @db.VarChar(60)
+ followupAt DateTime? @map("followup_at") @db.Timestamptz(6)
+ occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@index([tenantId,leadId,occurredAt])
+ @@map("crm_lead_activities")
+}
+model CrmCheckin {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ personId String @map("person_id") @db.Uuid
+ studentId String? @map("student_id") @db.Uuid
+ leadId String? @map("lead_id") @db.Uuid
+ branchId String @map("branch_id") @db.Uuid
+ sourceId String @map("source_id") @db.Uuid
+ status String @default("DRAFT") @db.VarChar(25)
+ purpose String? @db.VarChar(160)
+ checkedInAt DateTime @default(now()) @map("checked_in_at") @db.Timestamptz(6)
+ completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+ receivedByUserId String @map("received_by_user_id") @db.Uuid
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@index([tenantId,branchId,checkedInAt])
+ @@map("crm_checkins")
+}
+model CrmIntakeInvite {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ branchId String @map("branch_id") @db.Uuid
+ leadId String? @map("lead_id") @db.Uuid
+ tokenHash String @unique @map("token_hash") @db.Char(64)
+ expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+ redeemedAt DateTime? @map("redeemed_at") @db.Timestamptz(6)
+ createdByUserId String @map("created_by_user_id") @db.Uuid
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@index([tenantId,expiresAt])
+ @@map("crm_intake_invites")
+}
+model CrmIntakeSubmission {
+ id String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+ tenantId String @map("tenant_id") @db.Uuid
+ inviteId String @map("invite_id") @db.Uuid
+ fullName String @map("full_name") @db.VarChar(240)
+ guardianName String? @map("guardian_name") @db.VarChar(240)
+ guardianPhone String? @map("guardian_phone") @db.VarChar(40)
+ dateOfBirth DateTime? @map("date_of_birth") @db.Date
+ schoolName String? @map("school_name") @db.VarChar(240)
+ schoolGrade String? @map("school_grade") @db.VarChar(40)
+ status String @default("RECEIVED") @db.VarChar(30)
+ consentedAt DateTime @map("consented_at") @db.Timestamptz(6)
+ reviewedAt DateTime? @map("reviewed_at") @db.Timestamptz(6)
+ reviewedByUserId String? @map("reviewed_by_user_id") @db.Uuid
+ checkinId String? @map("checkin_id") @db.Uuid
+ createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ @@id([id])
+ @@unique([tenantId,id])
+ @@unique([tenantId,inviteId])
+ @@index([tenantId,status,createdAt])
+ @@map("crm_intake_submissions")
+}

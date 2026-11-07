@@ -1,0 +1,21 @@
+**/node_modules/
+**/.next/
+**/dist/
+**/.env
+**/.env.local
+infra/.env.test
+
+infra/keycloak/import/*.json
+verification/artifacts/
+
+# Generated local files and private environment variants.
+**/.env.*
+!**/.env.example
+!**/.env.*.example
+**/__pycache__/
+**/*.pyc
+**/*.tsbuildinfo
+**/coverage/
+**/*.log
+**/*.bak
+/*.zip

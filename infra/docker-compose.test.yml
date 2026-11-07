@@ -1,0 +1,20 @@
+# Local disposable PostgreSQL only. Do not use this Compose file as production infrastructure.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lmscrm_stage01_pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${PG_SUPERUSER_PASSWORD:?Set PG_SUPERUSER_PASSWORD in local .env.test}
+      POSTGRES_DB: lms_crm_stage01
+    ports:
+      - '127.0.0.1:55432:5432'
+    volumes:
+      - lmscrm_pg_stage01:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL','pg_isready -U postgres -d lms_crm_stage01']
+      interval: 3s
+      timeout: 3s
+      retries: 15
+volumes:
+  lmscrm_pg_stage01:
