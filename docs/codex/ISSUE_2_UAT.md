@@ -43,3 +43,8 @@ The existing actual-Chrome CI runner has been extended with source-fingerprint c
 4. CI runs unit tests, migration/FK/RLS, both builds, API/OIDC and actual Chrome. Record the new commit/run, then request owner acceptance; keep PR Draft and Issue #2 open until accepted.
 
 Rollback: revert this follow-up commit and restart the two application processes. No schema migration, database reset, volume deletion, main merge, Stage 03 work or public QR activation is part of this change. Discovery currently scans the identity tenant directory and checks memberships serially; larger deployments should replace this with a separately reviewed, actor-scoped discovery query without granting broad membership reads.
+
+
+## 2026-11-08 retest follow-up
+
+See [Stage 02 retest and fixes](STAGE02_RETEST_FIXES_20261108.md). The two direct-UAT defects (QL detail indicator and missing-branch HTTP 500) are fixed and covered by regressions. Current source/unit/API/SQL checks pass; full post-fix browser acceptance remains blocked until the frontend serves the new eight-file fingerprint. Public QR stays disabled; G3 owner acceptance remains pending. Historical results above are retained as snapshots.

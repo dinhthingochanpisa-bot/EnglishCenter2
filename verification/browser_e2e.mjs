@@ -98,6 +98,7 @@ async function main(){
  await waitFor(()=>evaluate(`(${row()})?.textContent.includes('QL – Có SĐT')`),'QL persisted');check('Browser qualifies lead through backend',true);
  await click('Chăm sóc',row());await fill('Nội dung','Synthetic browser care history');await submit();await click('Chi tiết',row());
  await waitFor(()=>evaluate(`document.body.textContent.includes('Synthetic browser care history')`),'care history');check('Browser care history persists',true);
+ check('Qualified detail does not show missing-phone warning',await evaluate(`!document.querySelector('[role="dialog"]').textContent.includes('Chưa có SĐT hợp lệ')`));
  check('Lead detail is visible in dialog',await evaluate(`!!document.querySelector('[role="dialog"] .crm-detail')`));
  await key('Escape');await waitFor(noDialog,'detail closes with Escape');
  await click('Check-in',row());await submit();

@@ -11,7 +11,7 @@ function loadTs(relative){
   const raw=fs.readFileSync(path.join(root,relative),'utf8');
   const js=ts.transpileModule(raw,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;
   const mod={exports:{}};
-  new Function('module','exports','require','process','Buffer','fetch',js.replace(/require\(["']server-only["']\);?/g,''))(mod,mod.exports,require,process,Buffer,globalThis.fetch);
+  new Function('module','exports','require','process','Buffer','fetch',js.replace(/require\(["']server-only["']\);?/g,''))(mod,mod.exports,createRequire(path.join(root,relative)),process,Buffer,globalThis.fetch);
   return mod.exports;
 }
 let tests=0;function assert(ok,msg){tests++;if(!ok)throw new Error('FAIL '+msg);console.log('PASS '+msg)}

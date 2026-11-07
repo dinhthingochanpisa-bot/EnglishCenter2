@@ -20,3 +20,6 @@ verification/artifacts/
 **/*.log
 **/*.bak
 /*.zip
+
+# Generated cache from isolated local browser UAT frontend.
+/frontend/tmp/luma-stage02-uat-next-*/

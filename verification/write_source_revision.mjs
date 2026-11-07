@@ -3,7 +3,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const files=['frontend/app/page.tsx','frontend/components/ui.tsx','frontend/components/crm-console.tsx','backend/src/controllers.ts','backend/src/tenant.service.ts','backend/src/main.ts'];
+const files=['frontend/app/page.tsx','frontend/components/ui.tsx','frontend/components/crm-console.tsx','backend/src/controllers.ts','backend/src/tenant.service.ts','backend/src/main.ts','backend/src/crm.service.ts','backend/src/contracts.ts'];
 const hash=createHash('sha256');
 for(const file of files)hash.update(file).update(fs.readFileSync(path.join(root,file)));
 const revision=hash.digest('hex');

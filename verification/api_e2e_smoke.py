@@ -81,6 +81,9 @@ def main():
     check('Lead initially NEW',lead['status'],'NEW')
     lead_id=lead['id'];person_id=lead['personId']
     detail=api('GET',f'/v1/tenants/{A}/crm/leads/{lead_id}',token=token_a,step='Read lead details')
+    check('NEW detail is not qualified',detail['lead'].get('isQualified'),False)
+    api('GET',f'/v1/tenants/{A}/crm/persons/{person_id}',token=token_a,expected=400,step='Missing Person branch is a client error')
+    api('GET',f'/v1/tenants/{A}/crm/persons/{person_id}?branchId=invalid',token=token_a,expected=400,step='Malformed Person branch is a client error')
     rv=detail['lead']['rowVersion']
     # New lead can't jump to converted ahead of completed Check-in.
     api('PATCH',f'/v1/tenants/{A}/crm/leads/{lead_id}',{'rowVersion':rv,'status':'CONVERTED'},token_a,expected=400,step='Reject unauthorized stage transition')
@@ -88,6 +91,7 @@ def main():
     check('QL status',updated['status'],'QUALIFIED')
     detail=api('GET',f'/v1/tenants/{A}/crm/leads/{lead_id}',token=token_a,step='QL persisted')
     check('QL has qualified_at',bool(detail['lead'].get('qualifiedAt')),True)
+    check('QL detail exposes qualification',detail['lead'].get('isQualified'),True)
     visible_phone=detail['lead'].get('contactPhone') or ''
     check('Sensitive phone redacted',visible_phone.startswith('*') and sum(c.isdigit() for c in visible_phone)<=4 and 'contactPhoneNormalized' not in detail['lead'],True)
     api('PATCH',f'/v1/tenants/{A}/crm/leads/{lead_id}',{'rowVersion':rv,'status':'QUALIFIED'},token_a,expected=409,step='Reject stale lead rowVersion')

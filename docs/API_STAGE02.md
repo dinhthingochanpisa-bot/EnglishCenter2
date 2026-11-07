@@ -22,6 +22,8 @@ All tenant endpoints are prefixed with `v1/tenants/:tenantId/crm`. They require 
 
 `PATCH /leads/:id` requires `rowVersion`; status change validated by a finite state machine. `qualified_at` is first qualification time; `CONVERTED` can only follow completed Check-in. All writes create audit records. Sensitive phone data requires `pii.read_sensitive`, while normal check-in completion can reference an approved QR submission without exposing the raw number.
 
+Lead list and detail responses expose `isQualified`, derived from the stored normalized contact phone independently of workflow status. Detail keeps `contactPhone` permission-masked and does not return `contactPhoneNormalized`. `GET /persons/:id` requires a UUID `branchId`; missing, malformed or non-string UUID inputs return HTTP 400 instead of a generic server error. Tenant membership, permission and object/branch authorization still apply to valid inputs.
+
 ## Key example: New Lead
 
 ```json

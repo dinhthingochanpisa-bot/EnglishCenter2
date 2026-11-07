@@ -40,3 +40,8 @@ Older README/verification docs say `BLOCKED: runtime cannot run` because they we
 
 ## Next owner action
 Work through `NEXT_TASKS.md` in order. The next engineering change is to inspect local modifications and repair/verify Modal focus, then make scripts and test realm reproducible. Do not start pricing engine until regression gates are green.
+
+
+## 2026-11-08 retest follow-up
+
+See [Stage 02 retest and fixes](STAGE02_RETEST_FIXES_20261108.md). The two direct-UAT defects (QL detail indicator and missing-branch HTTP 500) are fixed and covered by regressions. Current source/unit/API/SQL checks pass; full post-fix browser acceptance remains blocked until the frontend serves the new eight-file fingerprint. Public QR stays disabled; G3 owner acceptance remains pending. Historical results above are retained as snapshots.
