@@ -25,3 +25,9 @@ Dán nguyên prompt trong `docs/codex/CODEX_FIRST_PROMPT.md` vào Codex khi mở
 - Không gửi `.env.test`, cookie, token, private keys cho Codex qua chat công khai hoặc commit git.
 - Bản ZIP này có các **reference specs** ở dạng Markdown và không chứa mật khẩu, dữ liệu học sinh thật.
 - Giữ thay đổi local đã thực hiện (kể cả bản vá form focus) và backup trước khi Codex đồng bộ/clean git.
+
+## Engineering Specification v2.0 — Stage 03–09 (2026-11-07)
+- **Bắt buộc đọc thêm** `docs/engineering-v2/README.md` và `docs/engineering-v2/00_CODEX_IMPLEMENTATION_PROMPT.md` trước khi lập kế hoạch Stage 03.
+- Bộ v2.0 gồm 7 module PRD (Stage 03–09), contract dữ liệu/API, UI/UX, quy tắc nghiệp vụ, bảo mật, kiểm thử nghiệm thu, roadmap và ADR chờ duyệt.
+- **Tài liệu mô tả thiết kế dự kiến**, không đồng nghĩa backend/frontend các Stage này đã triển khai. Các API/bảng đề xuất phải đối chiếu với source thực tế rồi mới code.
+- Khi gặp mâu thuẫn với Stage 01–02, phân biệt `implemented`, `planned` và `open ADR`, không thay đổi nghiệp vụ hoặc database mà chưa kiểm thử.
