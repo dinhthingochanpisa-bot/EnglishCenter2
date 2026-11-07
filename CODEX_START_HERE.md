@@ -33,3 +33,13 @@ Dán nguyên prompt trong `docs/codex/CODEX_FIRST_PROMPT.md` vào Codex khi mở
 - Bộ v2.0 gồm 7 module PRD (Stage 03–09), contract dữ liệu/API, UI/UX, quy tắc nghiệp vụ, bảo mật, kiểm thử nghiệm thu, roadmap và ADR chờ duyệt.
 - **Tài liệu mô tả thiết kế dự kiến**, không đồng nghĩa backend/frontend các Stage này đã triển khai. Các API/bảng đề xuất phải đối chiếu với source thực tế rồi mới code.
 - Khi gặp mâu thuẫn với Stage 01–02, phân biệt `implemented`, `planned` và `open ADR`, không thay đổi nghiệp vụ hoặc database mà chưa kiểm thử.
+
+
+## 4 Skills Codex cài đặt tại repository
+Đã thêm 4 Skill dạng \`SKILL.md\` vào \`.agents/skills/\` (Codex nhận diện theo metadata \`name\` và \`description\`). Sau khi \`git pull\` nhánh làm việc, **mở phiên Codex mới** tại gốc workspace/repository để Codex nạp metadata mới. Các Skill có thể được gọi rõ ràng:
+- \`$lumaos-stage-gate\` — nghiệm thu Stage, kiểm tra bằng chứng CI/G3.
+- \`$lumaos-tenant-security\` — RBAC/RLS, cô lập tenant/branch, PII.
+- \`$lumaos-business-rules\` — CSBH, học phí, điểm danh, ledger, BI, golden tests.
+- \`$lumaos-browser-uat\` — kiểm thử UI thật bằng **Playwright MCP** đã được người dùng cài trên máy.
+
+Không tự coi Playwright MCP hoạt động chỉ vì Skill có mặt: Codex phải kiểm tra MCP server và thực sự kết nối được \`localhost:3000\`. Các file Skill và AGENTS.md tồn tại trong **nhánh \`fix/stage02-stabilization-gate\`**; cho đến khi merge, \`main\` không tự động có chúng.
