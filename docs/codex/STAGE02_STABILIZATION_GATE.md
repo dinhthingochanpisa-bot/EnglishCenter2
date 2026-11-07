@@ -24,15 +24,18 @@ All 17 Engineering v2.0 documents were read, including Stage 03, API contracts, 
 | Stage 02 source/schema/rules | PASS | `node verification/verify_stage02.mjs` |
 | Backend build | PASS | `node backend/node_modules/typescript/bin/tsc -p backend/tsconfig.build.json` |
 | Frontend typecheck | PASS | `node frontend/node_modules/typescript/bin/tsc --noEmit -p frontend/tsconfig.json` |
-| Authorization, assignment and runner regression | PASS 11/11 | `node --test verification/authorization.test.mjs verification/assignment.test.mjs verification/service_lifecycle.test.mjs` |
+| Authorization, assignment and runner regression | PASS 12/12 | `node --test verification/authorization.test.mjs verification/assignment.test.mjs verification/service_lifecycle.test.mjs`; includes IPv6-only listener |
 | Generator unit tests | PASS 5/5 | `python verification/test_realm_generator.py` |
 | Live API | PASS 69/69 | `python verification/run_live_acceptance.py --fresh-realm`; `verification/artifacts/stage3-gate/api-e2e.log` |
 | HTTP OIDC | PASS 13 | Same command, `oidc-http.log`; not browser evidence |
 | Fresh realm direct login | PASS | Separate realm `lms-demo-gate-03850adae303`; both accounts authenticate without manual email changes; `fresh-realm.log` |
 | Existing port handling | PASS | Default preflight correctly returns BLOCKED without stopping 3000/3001; explicit reuse recognizes current stack |
-| Actual browser on this machine | BLOCKED | Automatic approval review rejected launching Chrome: sandbox approval required but disabled in this session. Added suite is syntax-checked; execution requires CI or an enabled browser environment |
-| npm audit backend + frontend | BLOCKED | Both actual audit requests failed reaching npm advisory endpoint. No current vulnerability count or safe upgrade is asserted |
-| Native Windows Prisma/build/SQL | BLOCKED | Missing Windows native binaries / restricted download and Docker/WSL access as previously recorded; CI must provide current integration evidence |
+| Actual browser on this machine | BLOCKED | Automatic approval review rejected launching Chrome: sandbox approval required but disabled in this session. Actual browser evidence was obtained separately in CI |
+| Actual browser in CI | PASS 15/15 | [CI run 42362559449](https://github.com/dinhthingochanpisa-bot/EnglishCenter2/actions/runs/42362559449), full-browser-integration job, commit d99f63f |
+| Restricted-role API integration in CI | PASS 9/9 | Same CI run: separate tenant, branch-scoped read denial, no-assignment permission, invalid assignee branch, unchanged rowVersion |
+| Dependency audit in CI | Original backend FAIL; remediated candidate PASS high/critical threshold | Original: 14 total, 10 high, 4 moderate. Tested candidate: 0 high/critical, 5 moderate; package/lockfile imported after full regression. See [dependency review](STAGE02_DEPENDENCY_REVIEW.md) |
+| Prisma/migrations/RLS/FK and both builds in CI | PASS | Same run, postgres-and-apps and full-browser-integration; tests use runtime DB role for RLS |
+| Native Windows build/SQL | BLOCKED locally | Existing platform/download/Engine restrictions remain; CI results above are separate positive evidence |
 
 The first separate-realm test failed HTTP 409 because default subjects already existed in the running Keycloak database. Isolated test-realm subjects were namespaced; the fresh realm test was then rerun and passed. Existing `lms-demo` identities were not changed. The aggregate log from the earlier failed attempt must not be mistaken for the latest fresh-realm result; inspect the individual rerun log.
 
@@ -41,20 +44,20 @@ The first separate-realm test failed HTTP 409 because default subjects already e
 | IDs from docs/ACCEPTANCE_TESTS.md | Evidence / status |
 |---|---|
 | CRM-01 | PASS live API cross-tenant reads/writes, guessed person ID and audit denial |
-| CRM-02 | PASS service-unit branch scope; dedicated restricted-user browser/API fixture still required for full integration sign-off |
+| CRM-02 | PASS service-unit and live restricted-user API integration in CI |
 | CRM-03–07 | PASS live API siblings, NEW/QL, first qualification, invalid transition and stale version |
 | CRM-08 | PASS live concurrent completion: one success, one 409, one guardian link and completion audit |
-| CRM-09 | PASS live lead/person mismatch; independent direct SQL constraint evidence remains separately required |
+| CRM-09 | PASS live lead/person mismatch and independent composite-FK SQL tests in CI |
 | CRM-10 | PASS missing required completion fields rejected |
 | CRM-11–13 | BLOCKED for enabled QR acceptance; feature intentionally stays disabled. No public QR activation was performed |
 | CRM-14–16 | PASS live phone masking, audit isolation and preserved first attribution with appended touches |
-| CRM-17–18 | Permission/assignee service-unit regression added; dedicated restricted-user API/browser cases remain to certify integration |
+| CRM-17–18 | PASS service-unit and dedicated restricted-user API integration in CI |
 | CRM-19 | PASS disabled QR returns 503 |
-| CRM-20 | Browser offline-error/input-retention case added; actual execution pending |
+| CRM-20 | PASS actual browser offline-error/input-retention test in CI |
 
 ## Gate and Stage 03
 
-Do not open Stage 03 on the strength of API counts alone. Remaining: actual browser results, clean-environment SQL/RLS/build evidence, successful current dependency audit/triage, restricted-role integration coverage, decisions for QR-disabled scope and product-owner UAT sign-off (G3).
+Do not open Stage 03 on the strength of API counts alone. Browser, clean-environment SQL/RLS/build, restricted-role API and remediated dependency candidate evidence now exist. Remaining: confirm final committed lockfile CI, explicit decision for QR-disabled acceptance scope and product-owner UAT sign-off (G3). Five moderate dependency findings remain tracked for security release review; no production approval is implied.
 
 Only after the gate is met, produce the Stage 03 Implementation Plan from Engineering v2.0: Catalog→Pricing→Quote/Approval slices, additive migrations/RLS, OpenAPI 3.1, typed clients, decimal golden fixtures, immutable snapshots, rollout and rollback.
 
