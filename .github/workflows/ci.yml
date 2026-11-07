@@ -1,4 +1,4 @@
-name: stage01-saas-core-ci
+name: LumaOS Stage 02 stabilization
 on:
   push:
   pull_request:
@@ -44,18 +44,21 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:ci-disposable-only@127.0.0.1:5432/lms_crm_stage01
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           npm run prisma:generate
           npm run prisma:validate
           npm run db:migrate
           ALLOW_DEMO_SEED=true NODE_ENV=test npm run db:seed:demo
+          ALLOW_DEMO_SEED=true NODE_ENV=test npm run db:seed:crm
           npm run typecheck
           npm run build
           npm test
+          node --test ../verification/authorization.test.mjs ../verification/assignment.test.mjs ../verification/service_lifecycle.test.mjs
       - name: PostgreSQL tenant isolation + FK tests
         run: |
           PGUSER=app_runtime PGPASSWORD='ci-runtime-only' psql -X -v ON_ERROR_STOP=1 -f verification/rls_smoke.sql
           PGUSER=app_runtime PGPASSWORD='ci-runtime-only' psql -X -v ON_ERROR_STOP=1 -f verification/rls_and_grants_additional.sql
+          PGUSER=app_runtime PGPASSWORD='ci-runtime-only' psql -X -v ON_ERROR_STOP=1 -f verification/rls_crm_smoke.sql
           psql -X -v ON_ERROR_STOP=1 -f verification/composite_fk_smoke.sql
       - name: Frontend dependencies and build
         working-directory: frontend
@@ -66,10 +69,55 @@ jobs:
           OIDC_CLIENT_ID: lms-web
           SESSION_SECRET_BASE64: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           npm run typecheck
           npm run build
       - name: Additional source-level tests
         run: |
           node verification/verify_static.mjs
           node verification/verify_logic.mjs
+          node verification/verify_stage02.mjs
+          python3 verification/test_realm_generator.py
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit lockfile (high and critical block merge)
+        working-directory: ${{ matrix.module }}
+        run: |
+          mkdir -p ../verification/artifacts
+          npm audit --json --audit-level=high > ../verification/artifacts/audit-${{ matrix.module }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-audit-${{ matrix.module }}
+          path: verification/artifacts/audit-*.json
+
+  full-browser-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      RUN_BROWSER_E2E: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Disposable CI PostgreSQL, Keycloak, API and actual browser E2E
+        run: bash verification/run_local_full_e2e.sh
+      - name: Sanitize selected evidence (never upload env or browser profiles)
+        if: always()
+        run: python3 verification/sanitize_artifacts.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stage02-sanitized-evidence
+          path: verification/artifacts/sanitized/

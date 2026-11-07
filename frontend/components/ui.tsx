@@ -21,14 +21,27 @@ export function Modal({title,children,onClose}:{title:string;children:React.Reac
  onCloseRef.current=onClose;
  useEffect(()=>{
   const before=document.activeElement as HTMLElement|null;
-  // The close (X) button is in the header, so prioritize form controls in the body.
-  const firstControl=ref.current?.querySelector<HTMLElement>('.modal-body input, .modal-body select, .modal-body textarea, .modal-body button');
-  firstControl?.focus();
-  const handler=(e:KeyboardEvent)=>{if(e.key==='Escape')onCloseRef.current();};
-  window.addEventListener('keydown',handler);
-  return()=>{window.removeEventListener('keydown',handler);before?.focus();};
+  const dialog=ref.current;
+  if(!dialog)return;
+  const controls=()=>Array.from(dialog.querySelectorAll<HTMLElement>('a[href],button,input,select,textarea,[tabindex]')).filter(el=>el.tabIndex>=0&&!el.matches(':disabled')&&!el.closest('[hidden],[inert]')&&el.getClientRects().length>0);
+  const isTop=()=>Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"]')).at(-1)===dialog;
+  const focusFirst=()=>{const items=controls();(items.find(el=>el.closest('.modal-body'))??items[0]??dialog).focus();};
+  focusFirst();
+  const handler=(e:KeyboardEvent)=>{
+   if(!isTop()||e.defaultPrevented)return;
+   if(e.key==='Escape'){e.preventDefault();e.stopPropagation();onCloseRef.current();return;}
+   if(e.key!=='Tab')return;
+   const items=controls(),first=items[0],last=items.at(-1),active=document.activeElement;
+   if(!first){e.preventDefault();dialog.focus();return;}
+   if(e.shiftKey&&(active===first||!dialog.contains(active))){e.preventDefault();last?.focus();}
+   else if(!e.shiftKey&&(active===last||!dialog.contains(active))){e.preventDefault();first.focus();}
+  };
+  const keepInside=(e:FocusEvent)=>{if(isTop()&&!dialog.contains(e.target as Node))focusFirst();};
+  document.addEventListener('keydown',handler,true);
+  document.addEventListener('focusin',keepInside);
+  return()=>{document.removeEventListener('keydown',handler,true);document.removeEventListener('focusin',keepInside);if(before?.isConnected)before.focus();};
  },[]);
- return <div className="modal-scrim" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><div className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref}><div className="modal-header"><h2>{title}</h2><button aria-label="Đóng" className="icon-btn" onClick={onClose}><X size={19}/></button></div><div className="modal-body">{children}</div></div></div>
+ return <div className="modal-scrim" onMouseDown={e=>{if(e.target===e.currentTarget)onClose()}}><div className="modal" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} ref={ref}><div className="modal-header"><h2>{title}</h2><button type="button" aria-label="Đóng" className="icon-btn" onClick={onClose}><X size={19}/></button></div><div className="modal-body">{children}</div></div></div>
 }
 export function Field({label,children,hint}:{label:string;children:React.ReactNode;hint?:string}){return <label className="field"><span>{label}</span>{children}{hint&&<small>{hint}</small>}</label>}
 export function FormActions({onCancel,busy=false,text='Lưu thay đổi'}:{onCancel:()=>void;busy?:boolean;text?:string}){return <div className="form-actions"><Button type="button" kind="secondary" onClick={onCancel}>Hủy</Button><Button type="submit" disabled={busy}>{busy?'Đang xử lý...':text}</Button></div>}

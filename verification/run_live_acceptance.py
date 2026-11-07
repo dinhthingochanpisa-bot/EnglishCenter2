@@ -17,7 +17,9 @@ def main():
     env['PYTHONIOENCODING'] = 'utf-8'
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     results = []
-    for name, script in [('api-e2e', 'api_e2e_smoke.py'), ('oidc-http', 'oidc_http_smoke.py')]:
+    tests=[('api-e2e', 'api_e2e_smoke.py'), ('oidc-http', 'oidc_http_smoke.py')]
+    if '--fresh-realm' in sys.argv: tests.append(('fresh-realm','fresh_realm_smoke.py'))
+    for name, script in tests:
         try:
             completed = subprocess.run([sys.executable, str(ROOT / 'verification' / script)],
                 cwd=ROOT, env=env, capture_output=True, text=True, encoding='utf-8', timeout=240)

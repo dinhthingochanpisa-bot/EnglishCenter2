@@ -3,7 +3,19 @@
 set -Eeuo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-for cmd in docker npm node python3 curl; do command -v "$cmd" >/dev/null || { echo "BLOCKED: $cmd unavailable"; exit 2; }; done
+for cmd in node python3; do command -v "$cmd" >/dev/null || { echo "BLOCKED: $cmd unavailable"; exit 2; }; done
+# Check before credentials, Compose, migrations or seeds can change anything.
+if [[ "${1:-}" == '--reuse-services' ]]; then
+  node verification/service_lifecycle.mjs --reuse-services
+  [[ -f infra/.env.test ]] || { echo 'BLOCKED: local demo env missing'; exit 2; }
+  set -a; source infra/.env.test; set +a
+  python3 verification/run_live_acceptance.py
+  if [[ "${RUN_BROWSER_E2E:-false}" == true ]]; then node verification/browser_e2e.mjs; fi
+  exit 0
+fi
+[[ $# == 0 ]] || { echo 'Usage: run_local_full_e2e.sh [--reuse-services]'; exit 2; }
+node verification/service_lifecycle.mjs --preflight
+for cmd in docker npm curl; do command -v "$cmd" >/dev/null || { echo "BLOCKED: $cmd unavailable"; exit 2; }; done
 [[ -f infra/.env.test ]] || python3 verification/generate_local_env.py
 set -a; source infra/.env.test; set +a
 python3 verification/generate_dev_realm.py
@@ -18,19 +30,5 @@ curl --silent --fail --max-time 5 http://localhost:18080/realms/lms-demo/.well-k
 bash verification/run_stage02_integration.sh
 # All demo access tokens now must map to the platform user subjects from the seed.
 mkdir -p verification/artifacts
-export NODE_ENV=development
-cd backend
-node dist/main.js >../verification/artifacts/backend.log 2>&1 & B_PID=$!
-cd ../frontend
-npm run dev >../verification/artifacts/frontend.log 2>&1 & F_PID=$!
-cd ..
-trap 'kill "$B_PID" "$F_PID" 2>/dev/null || : ' EXIT
-for i in {1..50}; do curl --silent --fail http://localhost:3001/health/live >/dev/null && break; sleep 1; done
-curl --silent --fail http://localhost:3001/health/live >/dev/null || { echo 'BLOCKED: Backend failed to start'; tail -60 verification/artifacts/backend.log;exit 3; }
-for i in {1..50}; do curl --silent --fail http://localhost:3000/ >/dev/null && break; sleep 1; done
-curl --silent --fail http://localhost:3000/ >/dev/null || { echo 'BLOCKED: Frontend failed to start'; tail -60 verification/artifacts/frontend.log;exit 3; }
-ALLOW_DEMO_E2E=true python3 verification/api_e2e_smoke.py | tee verification/artifacts/api_e2e_report.log
-# OIDC browser login initiation verifies Next redirects with PKCE and sets an HttpOnly pending cookie.
-curl --silent -D verification/artifacts/next_login_headers.txt -o /dev/null http://localhost:3000/api/auth/login
-python3 verification/check_next_login.py verification/artifacts/next_login_headers.txt
-printf '\nE2E COMPLETE: Check reports in verification/artifacts; full browser callback still requires interactive test.\n'
+node verification/service_lifecycle.mjs
+printf '\nSee verification/artifacts/stage3-gate for API/OIDC results. Browser evidence requires RUN_BROWSER_E2E=true.\n'

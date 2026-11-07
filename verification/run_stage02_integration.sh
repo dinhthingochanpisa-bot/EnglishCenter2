@@ -15,7 +15,7 @@ docker compose --env-file infra/.env.test -f infra/docker-compose.test.yml exec 
  -e PGPASSWORD="$APP_RUNTIME_PASSWORD" postgres \
  psql -X -v ON_ERROR_STOP=1 -U app_runtime -d lms_crm_stage01 < verification/rls_crm_smoke.sql
 cd frontend
-npm install
+npm ci --no-audit --no-fund
 npm run typecheck
 npm run build
 cd "$ROOT"
