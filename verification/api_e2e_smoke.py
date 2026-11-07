@@ -3,6 +3,7 @@
 Test-only, destructive to demo db. Requires seeded 2 tenants and 2 demo OIDC users.
 """
 import json, os, sys, time, urllib.error, urllib.parse, urllib.request, uuid
+from concurrent.futures import ThreadPoolExecutor
 API=os.environ.get('API_URL','http://localhost:3001').rstrip('/')
 ISSUER=os.environ.get('OIDC_ISSUER','http://localhost:18080/realms/lms-demo').rstrip('/')
 A='11111111-1111-4111-8111-111111111111'
@@ -56,8 +57,14 @@ def main():
     if not pwd_a or not pwd_b: raise SystemExit('Source infra/.env.test to supply demo credentials')
     code,_=req('GET',API+'/health/live');check('NestJS health',code,200)
     token_a=login('demo-a',pwd_a);token_b=login('demo-b',pwd_b)
+    api('GET','/v1/me/tenants',expected=401,step='Unauthenticated tenant discovery denied')
+    for token,tenant,label in [(token_a,A,'A'),(token_b,B,'B')]:
+        accessible=api('GET','/v1/me/tenants',token=token,step='Discover own tenants '+label)
+        check('Only own tenant returned '+label,[item['id'] for item in accessible],[tenant])
+        check('Tenant has friendly identity '+label,all(item['code'] and item['displayName'] for item in accessible),True)
     # unauthorized request (security enforcement in backend, not just UI)
     api('GET',f'/v1/tenants/{A}/crm/leads',expected=401,step='Unauthenticated CRM denied')
+    api('GET',f'/v1/tenants/{A}/crm/leads',token='invalid.token.signature',expected=401,step='Invalid JWT denied')
     api('GET',f'/v1/tenants/{B}/crm/leads',token=token_a,expected=403,step='Tenant A cannot read Tenant B')
     api('GET',f'/v1/tenants/{A}/crm/leads',token=token_b,expected=403,step='Tenant B cannot read Tenant A')
     branches=api('GET',f'/v1/tenants/{A}/branches',token=token_a,step='Authorized branch listing')
@@ -74,6 +81,9 @@ def main():
     check('Lead initially NEW',lead['status'],'NEW')
     lead_id=lead['id'];person_id=lead['personId']
     detail=api('GET',f'/v1/tenants/{A}/crm/leads/{lead_id}',token=token_a,step='Read lead details')
+    check('NEW detail is not qualified',detail['lead'].get('isQualified'),False)
+    api('GET',f'/v1/tenants/{A}/crm/persons/{person_id}',token=token_a,expected=400,step='Missing Person branch is a client error')
+    api('GET',f'/v1/tenants/{A}/crm/persons/{person_id}?branchId=invalid',token=token_a,expected=400,step='Malformed Person branch is a client error')
     rv=detail['lead']['rowVersion']
     # New lead can't jump to converted ahead of completed Check-in.
     api('PATCH',f'/v1/tenants/{A}/crm/leads/{lead_id}',{'rowVersion':rv,'status':'CONVERTED'},token_a,expected=400,step='Reject unauthorized stage transition')
@@ -81,6 +91,7 @@ def main():
     check('QL status',updated['status'],'QUALIFIED')
     detail=api('GET',f'/v1/tenants/{A}/crm/leads/{lead_id}',token=token_a,step='QL persisted')
     check('QL has qualified_at',bool(detail['lead'].get('qualifiedAt')),True)
+    check('QL detail exposes qualification',detail['lead'].get('isQualified'),True)
     visible_phone=detail['lead'].get('contactPhone') or ''
     check('Sensitive phone redacted',visible_phone.startswith('*') and sum(c.isdigit() for c in visible_phone)<=4 and 'contactPhoneNormalized' not in detail['lead'],True)
     api('PATCH',f'/v1/tenants/{A}/crm/leads/{lead_id}',{'rowVersion':rv,'status':'QUALIFIED'},token_a,expected=409,step='Reject stale lead rowVersion')
@@ -90,13 +101,24 @@ def main():
     check('First qualification timestamp is immutable',detail['lead']['qualifiedAt'],qualified_at)
     sibling=api('POST',f'/v1/tenants/{A}/crm/leads',{'branchId':bid,'studentName':'Sibling Runtime '+suffix,'contactName':'Parent Runtime','contactPhone':'0912345678','sourceId':source['id']},token_a,step='Create sibling with same guardian phone')
     check('Shared guardian phone never merges persons',sibling['personId']!=person_id,True)
+    followup_source=api('POST',f'/v1/tenants/{A}/crm/sources',{'code':f'TOUCH_{suffix}','name':'Synthetic follow-up '+suffix,'category':'SCHOOL'},token_a,step='Create follow-up attribution source')
+    api('POST',f'/v1/tenants/{A}/crm/leads/{lead_id}/touches',{'sourceId':followup_source['id'],'touchType':'FOLLOWUP'},token_a,step='Append attribution touch')
+    attribution=api('GET',f'/v1/tenants/{A}/crm/leads/{lead_id}',token=token_a,step='Read attribution history')
+    check('Original lead source remains unchanged',attribution['lead']['sourceId'],source['id'])
+    check('First and follow-up source touches retained',any(x['sourceId']==source['id'] and x['touchType']=='FIRST_TOUCH' for x in attribution['touches']) and any(x['sourceId']==followup_source['id'] for x in attribution['touches']),True)
+    api('POST',f'/v1/tenants/{A}/crm/checkins',{'branchId':bid,'personId':sibling['personId'],'leadId':lead_id,'sourceId':source['id']},token_a,expected=400,step='Mismatched lead/person check-in rejected')
     activity=api('POST',f'/v1/tenants/{A}/crm/leads/{lead_id}/activities',{'kind':'CALL','note':'Synthetic pre-sales care / follow-up','outcome':'CONNECTED'},token_a,step='Record customer care')
     detail=api('GET',f'/v1/tenants/{A}/crm/leads/{lead_id}',token=token_a,step='Care history visible')
     check('Care activity persisted',any(a['note'].startswith('Synthetic pre-sales care') for a in detail['activities']),True)
     checkin=api('POST',f'/v1/tenants/{A}/crm/checkins',{'branchId':bid,'personId':person_id,'leadId':lead_id,'sourceId':source['id'],'purpose':'Trial placement test'},token_a,step='Create check-in draft')
     check('Draft status',checkin['status'],'DRAFT')
     api('POST',f"/v1/tenants/{A}/crm/checkins/{checkin['id']}/complete",{},token_a,expected=400,step='Incomplete check-in cannot complete')
-    completed=api('POST',f"/v1/tenants/{A}/crm/checkins/{checkin['id']}/complete",{'dateOfBirth':'2013-01-15','schoolName':'Synthetic School','schoolGrade':'8','guardianName':'Synthetic Parent','guardianPhone':'0912345678','guardianRelation':'MOTHER'},token_a,step='Complete Check-in')
+    completion={'dateOfBirth':'2013-01-15','schoolName':'Synthetic School','schoolGrade':'8','guardianName':'Synthetic Parent','guardianPhone':'0912345678','guardianRelation':'MOTHER'}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        calls=list(pool.map(lambda _:req('POST',API+f"/v1/tenants/{A}/crm/checkins/{checkin['id']}/complete",completion,token_a),range(2)))
+    check('Concurrent completion has one success',sum(status in (200,201) for status,_ in calls),1)
+    check('Concurrent completion rejects other writer',sum(status==409 for status,_ in calls),1)
+    completed=next(body for status,body in calls if status in (200,201))
     check('Student identity generated',bool(completed.get('studentId')),True)
     check('Check-in completed',completed['status'],'COMPLETED')
     detail=api('GET',f'/v1/tenants/{A}/crm/leads/{lead_id}',token=token_a,step='Lead after Check-in')
@@ -108,6 +130,14 @@ def main():
     check('Parent link persisted',len(profile['guardians'])>0,True)
     check('Check-in in 360 profile',any(x['id']==checkin['id'] for x in profile['checkins']),True)
     check('Lead in 360 profile',any(x['id']==lead_id for x in profile['leads']),True)
+    check('Only one completed check-in after concurrent writes',sum(x['id']==checkin['id'] and x['status']=='COMPLETED' for x in profile['checkins']),1)
+    check('Only one guardian relationship created',len(profile['guardians']),1)
+    check('Guardian phone is masked',all(not g.get('phone') or g['phone'].startswith('*') for g in profile['guardians']),True)
+    audit_a=api('GET',f'/v1/tenants/{A}/audit-logs?limit=100',token=token_a,step='Read tenant A audit trail')
+    check('Check-in completion is audited once',sum(x.get('resourceId')==checkin['id'] and x['action']=='crm.checkin.completed' for x in audit_a),1)
+    audit_b=api('GET',f'/v1/tenants/{B}/audit-logs?limit=100',token=token_b,step='Read tenant B audit trail')
+    check('Tenant A audit never appears in B',not any(x.get('resourceId') in (lead_id,person_id,checkin['id'],source['id']) for x in audit_b),True)
+    api('GET',f'/v1/tenants/{B}/audit-logs',token=token_a,expected=403,step='Cross-tenant audit access denied')
     # Cross-tenant direct read/write; also non-tenant IDs with valid tokens.
     api('GET',f'/v1/tenants/{B}/crm/persons/{person_id}?branchId={b_bid}',token=token_b,expected=404,step='Tenant B cannot read A person ID')
     api('POST',f'/v1/tenants/{A}/crm/leads',{'branchId':b_bid,'studentName':'Cross Tenant','sourceId':source['id']},token_a,expected={400,403,404},step='Cross-tenant Branch rejected')

@@ -15,7 +15,7 @@ $COMPOSE exec -T -e PGPASSWORD="$PG_SUPERUSER_PASSWORD" postgres $PSQL -v runtim
 # This script intentionally uses a disposable test DB only; never deploy production migrations blindly.
 cd backend
 export DATABASE_URL="postgresql://postgres:${PG_SUPERUSER_PASSWORD}@127.0.0.1:55432/lms_crm_stage01"
-npm install
+npm ci --no-audit --no-fund
 npm run prisma:generate
 npm run prisma:validate
 npm run db:migrate

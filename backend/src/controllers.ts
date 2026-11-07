@@ -37,3 +37,9 @@ export class TenantController {
  @Delete('roles/:id/permissions/:code') revokePermission(@Req() r:AuthRequest,@Param('tenantId',ParseUUIDPipe) t:string,@Param('id',ParseUUIDPipe) id:string,@Param('code') code:string){return this.svc.removeRolePermission(t,id,code,r.actor)}
  @Get('audit-logs') audit(@Req() r:AuthRequest,@Param('tenantId',ParseUUIDPipe) t:string,@Query('limit') limit?:string,@Query('cursor') cursor?:string){return this.svc.audit(t,r.actor,Number(limit||50),cursor)}
 }
+
+@ApiTags('identity') @ApiBearerAuth() @UseGuards(AuthGuard) @Controller('v1/me')
+export class MeController {
+ constructor(private readonly svc:CoreService){}
+ @Get('tenants') tenants(@Req() r:AuthRequest){return this.svc.myTenants(r.actor)}
+}

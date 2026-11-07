@@ -131,7 +131,7 @@ type Tx=Prisma.TransactionClient;
   const events=await tx.crmLeadEvent.findMany({where:{tenantId:t,leadId:id},orderBy:{occurredAt:'asc'},take:100});
   const rights=await this.auth.permissionSnapshot(tx,t,a);
   const canPhone=Boolean(rights.permissions['pii.read_sensitive']?.tenantWide||rights.permissions['pii.read_sensitive']?.branchIds.includes(lead.branchId));
-  return {lead:{...lead,contactPhone:canPhone?lead.contactPhone:redactPhone(lead.contactPhone),contactPhoneNormalized:undefined},person,activities,touches,events};
+  return {lead:{...lead,isQualified:!!lead.contactPhoneNormalized,contactPhone:canPhone?lead.contactPhone:redactPhone(lead.contactPhone),contactPhoneNormalized:undefined},person,activities,touches,events};
  });}
  async createLead(t:string,a:Actor,d:CreateLeadDto){uuid(t);if(!d.personId&&!d.studentName)throw new BadRequestException('personId or studentName required');
   let phone:string|null;

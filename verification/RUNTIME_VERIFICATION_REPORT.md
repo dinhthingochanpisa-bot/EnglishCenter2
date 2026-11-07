@@ -1,3 +1,5 @@
+> **Báo cáo tổng hợp Stage 02:** [STAGE02_REPORT.md](../docs/codex/STAGE02_REPORT.md). Nội dung bên dưới được giữ để truy vết lịch sử; xem báo cáo tổng hợp để biết kết quả mới nhất.
+
 # Stage 01–02 runtime verification — report
 
 > Historical report. New Windows-session testing on 2026-11-07 passed 53 live API checks and 13 HTTP OIDC callback checks against the existing local services. See [current Stage 3 readiness](STAGE3_READINESS_2026-11-07.md) for evidence and remaining gates.

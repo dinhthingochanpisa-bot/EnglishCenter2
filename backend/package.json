@@ -33,5 +33,16 @@
     "prisma": "6.19.0",
     "tsx": "4.20.6",
     "typescript": "5.9.3"
+  },
+  "overrides": {
+    "body-parser": "^1.20.9",
+    "multer": "^2.5.0",
+    "js-yaml": "^4.3.2",
+    "lodash": "^4.17.24",
+    "effect": "^3.20.0",
+    "qs": "^6.16.1",
+    "@prisma/config": {
+      "deepmerge-ts": "^8.0.0"
+    }
   }
 }

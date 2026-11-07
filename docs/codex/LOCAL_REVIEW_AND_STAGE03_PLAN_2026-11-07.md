@@ -1,3 +1,5 @@
+> **Báo cáo tổng hợp Stage 02:** [STAGE02_REPORT.md](STAGE02_REPORT.md). Nội dung bên dưới được giữ để truy vết lịch sử; xem báo cáo tổng hợp để biết kết quả mới nhất.
+
 # LumaOS — Báo cáo đối chiếu mã nguồn và kế hoạch trước Stage 03
 
 **Ngày:** 2026-11-07, Asia/Bangkok.  

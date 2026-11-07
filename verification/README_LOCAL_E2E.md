@@ -1,5 +1,7 @@
 # Stage 01–02: local PostgreSQL / OIDC / CRM end-to-end validation
 
+> Latest stabilization evidence and safe commands: [Stage 02 gate](../docs/codex/STAGE02_STABILIZATION_GATE.md). The runner now refuses occupied ports before any infra/seed work; use `--reuse-services` explicitly for an already-running synthetic stack. `RUN_BROWSER_E2E=true` enables actual Chrome tests. CI uses its own UID override for secret import files; do not apply that override to an existing local Keycloak container.
+
 > Current Windows-session evidence (2026-11-07): live CRM API and HTTP OIDC callback tests now run successfully against the existing localhost stack. Native builds and direct database acceptance remain blocked. See [Stage 3 readiness](STAGE3_READINESS_2026-11-07.md); the status below describes the original preparation environment.
 
 **Status in the current execution environment:** BLOCKED. `docker`, `postgres`, and `psql` are not installed; the npm registry is unreachable (`EAI_AGAIN`). The script below is **provided for execution on a Docker-capable machine**, not represented as a successful run here.
