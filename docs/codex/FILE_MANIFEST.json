@@ -1,0 +1,25 @@
+{
+  "version": "v1",
+  "generated": "2026-11-07",
+  "intent": "Documentation-only overlay for user existing LumaOS Stage02 workspace",
+  "files": [
+    "AGENTS.md",
+    "CODEX_START_HERE.md",
+    "docs/codex/ARCHITECTURE_AND_CODEMAP.md",
+    "docs/codex/CODEX_FIRST_PROMPT.md",
+    "docs/codex/HANDOFF_STATUS.md",
+    "docs/codex/HUMAN_SETUP.md",
+    "docs/codex/NEXT_TASKS.md",
+    "docs/codex/OPEN_DECISIONS.md",
+    "docs/codex/PRODUCT_AND_WORKFLOWS.md",
+    "docs/codex/REFERENCE_INDEX.md",
+    "docs/codex/SECURITY_AND_DATA.md",
+    "docs/codex/TEST_RUNBOOK.md",
+    "docs/codex/reference/ADR_open_decisions.md",
+    "docs/codex/reference/ERD_diagrams.md",
+    "docs/codex/reference/ERD_v1.md",
+    "docs/codex/reference/Master_PRD_LMS_CRM_SaaS_v1.md",
+    "docs/codex/reference/Permission_Matrix_v1.md",
+    "docs/codex/reference/State_Machines_v1.md"
+  ]
+}
