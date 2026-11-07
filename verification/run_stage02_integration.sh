@@ -14,6 +14,11 @@ cd "$ROOT"
 docker compose --env-file infra/.env.test -f infra/docker-compose.test.yml exec -T \
  -e PGPASSWORD="$APP_RUNTIME_PASSWORD" postgres \
  psql -X -v ON_ERROR_STOP=1 -U app_runtime -d lms_crm_stage01 < verification/rls_crm_smoke.sql
+if [[ "${INCLUDE_GATE_USERS:-false}" == true ]]; then
+ cd backend
+ ALLOW_GATE_SEED=true NODE_ENV=test node --import tsx prisma/seeds/seed-gate.ts
+ cd "$ROOT"
+fi
 cd frontend
 npm ci --no-audit --no-fund
 npm run typecheck

@@ -1,0 +1,5 @@
+# CI only: imported credential file remains mode 0600 and readable by its owner.
+# Never apply this override to an existing local Keycloak container.
+services:
+  keycloak:
+    user: '${KEYCLOAK_TEST_UID:?Set to CI runner uid}:0'

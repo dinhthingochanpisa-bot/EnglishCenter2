@@ -1,7 +1,9 @@
 name: LumaOS Stage 02 stabilization
 on:
   push:
+    branches: [main]
   pull_request:
+  workflow_dispatch:
 jobs:
   postgres-and-apps:
     runs-on: ubuntu-latest
@@ -91,10 +93,7 @@ jobs:
         with:
           node-version: '22'
       - name: Audit lockfile (high and critical block merge)
-        working-directory: ${{ matrix.module }}
-        run: |
-          mkdir -p ../verification/artifacts
-          npm audit --json --audit-level=high > ../verification/artifacts/audit-${{ matrix.module }}.json
+        run: node verification/audit_dependencies.mjs ${{ matrix.module }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -106,16 +105,28 @@ jobs:
     timeout-minutes: 25
     env:
       RUN_BROWSER_E2E: 'true'
+      INCLUDE_GATE_USERS: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Disposable CI PostgreSQL, Keycloak, API and actual browser E2E
-        run: bash verification/run_local_full_e2e.sh
+        run: |
+          python3 verification/generate_local_env.py
+          python3 - <<'PY'
+          import secrets
+          from pathlib import Path
+          with Path('infra/.env.test').open('a') as handle:
+              for name in ('GATE_SALES_PASSWORD', 'GATE_MANAGER_PASSWORD'):
+                  handle.write(name+'='+secrets.token_urlsafe(24)+'\n')
+          PY
+          bash verification/run_local_full_e2e.sh
       - name: Sanitize selected evidence (never upload env or browser profiles)
         if: always()
-        run: python3 verification/sanitize_artifacts.py
+        run: |
+          python3 verification/sanitize_artifacts.py
+          if [[ -f verification/artifacts/sanitized/keycloak.log ]]; then cat verification/artifacts/sanitized/keycloak.log; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

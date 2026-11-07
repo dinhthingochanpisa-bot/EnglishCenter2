@@ -30,7 +30,10 @@ def build_realm(env=None, realm_name='lms-demo'):
  'users':[
   {'id':id if realm_name=='lms-demo' else str(uuid.uuid5(uuid.UUID(id),realm_name)),'username':username,'enabled':True,'email':f'{username}@example.test','emailVerified':True,'firstName':username,'lastName':'Synthetic','requiredActions':[],
    'credentials':[{'type':'password','value':required(env_key,env),'temporary':False}]}
-  for id,username,env_key in users
+  for id,username,env_key in users+([
+   ('cccccccc-cccc-4ccc-8ccc-cccccccccccc','gate-sales','GATE_SALES_PASSWORD'),
+   ('dddddddd-dddd-4ddd-8ddd-dddddddddddd','gate-manager','GATE_MANAGER_PASSWORD')
+  ] if env.get('INCLUDE_GATE_USERS')=='true' else [])
  ]
 }
 if __name__=='__main__':

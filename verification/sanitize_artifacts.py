@@ -13,8 +13,8 @@ for file in (ROOT/'infra/.env.test',ROOT/'backend/.env',ROOT/'frontend/.env.loca
                 secrets.append(value.strip().strip('"\''))
 target=ART/'sanitized'
 target.mkdir(parents=True,exist_ok=True)
-allowed=['backend.log','frontend.log','stage3-gate/api-e2e.log','stage3-gate/oidc-http.log',
-         'stage3-gate/fresh-realm.log','stage3-gate/live-summary.json','browser/summary.json']
+allowed=['backend.log','frontend.log','keycloak.log','stage3-gate/api-e2e.log','stage3-gate/oidc-http.log',
+         'stage3-gate/fresh-realm.log','stage3-gate/restricted-roles.log','stage3-gate/live-summary.json','browser/summary.json']
 for name in allowed:
     file=ART/name
     if not file.exists(): continue

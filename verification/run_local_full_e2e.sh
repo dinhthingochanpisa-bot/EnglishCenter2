@@ -20,12 +20,20 @@ for cmd in docker npm curl; do command -v "$cmd" >/dev/null || { echo "BLOCKED: 
 set -a; source infra/.env.test; set +a
 python3 verification/generate_dev_realm.py
 DOCKER_COMPOSE="docker compose --env-file infra/.env.test -f infra/docker-compose.test.yml -f infra/docker-compose.oidc.yml"
+if [[ "${CI:-false}" == true ]]; then
+ export KEYCLOAK_TEST_UID="$(id -u)"
+ DOCKER_COMPOSE+=" -f infra/docker-compose.oidc.ci.yml"
+fi
 $DOCKER_COMPOSE up -d postgres keycloak
 for i in {1..90}; do
   if curl --silent --fail --max-time 3 http://localhost:18080/realms/lms-demo/.well-known/openid-configuration >/dev/null; then break; fi
   sleep 2
  done
-curl --silent --fail --max-time 5 http://localhost:18080/realms/lms-demo/.well-known/openid-configuration >/dev/null || { echo 'BLOCKED: Keycloak import/OIDC failed; inspect docker logs';exit 3; }
+curl --silent --fail --max-time 5 http://localhost:18080/realms/lms-demo/.well-known/openid-configuration >/dev/null || {
+ mkdir -p verification/artifacts
+ $DOCKER_COMPOSE logs --no-color --tail 100 keycloak > verification/artifacts/keycloak.log 2>&1 || true
+ echo 'BLOCKED: Keycloak import/OIDC failed; inspect sanitized Keycloak log';exit 3;
+}
 # Stage 01–02 migrations, seed, RLS smoke and compile. Provisioner scripts source .env.test.
 bash verification/run_stage02_integration.sh
 # All demo access tokens now must map to the platform user subjects from the seed.

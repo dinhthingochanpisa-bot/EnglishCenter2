@@ -19,6 +19,7 @@ def main():
     results = []
     tests=[('api-e2e', 'api_e2e_smoke.py'), ('oidc-http', 'oidc_http_smoke.py')]
     if '--fresh-realm' in sys.argv: tests.append(('fresh-realm','fresh_realm_smoke.py'))
+    if env.get('INCLUDE_GATE_USERS')=='true': tests.append(('restricted-roles','restricted_roles_smoke.py'))
     for name, script in tests:
         try:
             completed = subprocess.run([sys.executable, str(ROOT / 'verification' / script)],
