@@ -40,3 +40,13 @@
 
 ## Definition of Done
 All acceptance criteria addressed; no cross-tenant authorization regression; migrations reviewed when applicable; relevant unit/integration/E2E tests pass (or blockers disclosed); UI tested with real keyboard navigation; builds/typechecks pass; no secrets or real PII committed; docs updated; deployment impact and rollback included.
+
+
+## Codex project Skills — Stage 02+ (installed in this repository)
+The project Skills are located under \`.agents/skills/<skill-name>/SKILL.md\`. Read and invoke the relevant Skill on task type (explicit names can be used as \`$skill-name\` in Codex):
+- \`$lumaos-stage-gate\`: any stage acceptance, G0–G5 sign-off, CI/PR readiness. Evidence must match HEAD and product-owner G3 sign-off remains separate.
+- \`$lumaos-tenant-security\`: authentication, membership/branch permissions, RLS, schema/API changes, sensitive PII and finance. Require tenant A/B negative tests.
+- \`$lumaos-business-rules\`: product/pricing, promotions, attendance/lesson entitlement, contracts, refund/transfer, renewal/BI. Use approved ADR + versioned golden fixtures; no unapproved defaults.
+- \`$lumaos-browser-uat\`: real UI bug, Lead/detail/login/Check-in flows and Stage UI acceptance. Use the installed Playwright MCP when available and verify the running revision.
+
+For current Stage 02 status read \`docs/codex/STAGE02_REPORT.md\` (2026-11-08 consolidated report). Historic PASS does not prove current commit; a green CI does not replace the user's UAT. Existing security/secret/DB protection rules above override any proposed skill workflow.
