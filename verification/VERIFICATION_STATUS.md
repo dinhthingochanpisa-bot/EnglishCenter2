@@ -1,3 +1,5 @@
+> **Báo cáo tổng hợp Stage 02:** [STAGE02_REPORT.md](../docs/codex/STAGE02_REPORT.md). Nội dung bên dưới được giữ để truy vết lịch sử; xem báo cáo tổng hợp để biết kết quả mới nhất.
+
 # Stage 01A + 01B — Verification status (2026-11-06)
 
 ## Passed locally

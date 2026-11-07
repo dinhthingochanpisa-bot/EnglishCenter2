@@ -1,3 +1,5 @@
+> **Báo cáo tổng hợp Stage 02:** [STAGE02_REPORT.md](STAGE02_REPORT.md). Nội dung bên dưới được giữ để truy vết lịch sử; xem báo cáo tổng hợp để biết kết quả mới nhất.
+
 # Stage 02 Stabilization Gate — evidence and remaining sign-off
 
 Date: 2026-11-07. Source baseline: `9f48770`; latest main documentation reviewed at `40e138d1dde08d3f95befa73f22572407e96ae41`.

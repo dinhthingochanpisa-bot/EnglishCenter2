@@ -82,6 +82,7 @@ jobs:
           npm run build
       - name: Additional source-level tests
         run: |
+          node --test verification/login_prompt.test.mjs
           node verification/verify_static.mjs
           node verification/verify_logic.mjs
           node verification/verify_stage02.mjs

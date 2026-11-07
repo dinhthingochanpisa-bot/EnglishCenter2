@@ -1,3 +1,5 @@
+> **Stage 02 — báo cáo chính:** [Báo cáo tổng hợp](docs/codex/STAGE02_REPORT.md), gồm kết quả mới nhất, lịch sử sửa lỗi, bằng chứng, giới hạn nghiệm thu và rollback.
+
 # LumaOS — BẮT ĐẦU VỚI CODEX
 
 Đây là **bộ tài liệu bàn giao**, không phải bộ mã nguồn mới. Mã nguồn đang ở thư mục `workspace` mà người dùng đã giải nén và chạy trên máy Windows/Ubuntu WSL2. Đặt `AGENTS.md` tại **gốc workspace**, và thư mục `docs/codex/` vào `workspace/docs/codex/`.

@@ -1,3 +1,5 @@
+> **Báo cáo tổng hợp Stage 02:** [STAGE02_REPORT.md](STAGE02_REPORT.md). Nội dung bên dưới được giữ để truy vết lịch sử; xem báo cáo tổng hợp để biết kết quả mới nhất.
+
 # Stage 02 retest and fixes — 2026-11-08
 
 Status: backend/source/SQL checks PASS; **full post-fix browser gate BLOCKED by stale frontend fingerprint**. This is not full Stage 02 acceptance or production approval. The earlier two application defects are fixed and directly rechecked.
@@ -64,3 +66,8 @@ Artifacts: ignored `verification/artifacts/stage02-retest-20261108/` contains sa
 No schema migration, DB reset, volume deletion, PostgreSQL/Keycloak stop, dependency replacement, public QR activation, merge or deployment. API tests add synthetic records and leave them intact. Restricted-role testing added the reserved synthetic Gate tenant/accounts; only these new test identities were aligned to actual REST-created Keycloak subjects. Existing demo accounts and real data were not changed.
 
 Application rollback: restore only this task's edits in `backend/src/contracts.ts` and `backend/src/crm.service.ts` from the ignored source baseline after comparing for newer local changes, rebuild/restart the owned backend, regenerate `frontend/lib/source-revision.json` with the prior file list if reverting the fingerprint expansion, and restart frontend. Review/revert the accompanying verification/CI/docs edits individually; no data rollback is needed. Source backups and per-file diffs/hashes are retained because Git metadata is absent. Do not overwrite later user patches or delete retained synthetic data without explicit authorization.
+
+
+## 2026-11-08 browser follow-up after frontend restart
+
+The frontend now serves revision `4dc53554b14ca76cd37edd1e1794c6aa65a72c6b4620c2cfea54f80e9a67416e`. Full real-Chrome regression PASS 25/25 (exit 0), and direct Playwright MCP confirmed care datetime input/save, explicit login despite SSO, switching demo-a→demo-b and cross-tenant 403. See [care datetime/login fix evidence](CARE_DATETIME_LOGIN_FIX_20261108.md). This resolves the stale-frontend browser blocker recorded above; original checkpoints remain historical. No native OS IME, dedicated multi-membership browser or enabled public QR acceptance is claimed; owner G3 sign-off remains pending. No DB reset, infrastructure stop, main merge or production approval.

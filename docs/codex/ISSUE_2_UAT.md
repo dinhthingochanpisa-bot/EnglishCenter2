@@ -1,3 +1,5 @@
+> **Báo cáo tổng hợp Stage 02:** [STAGE02_REPORT.md](STAGE02_REPORT.md). Nội dung bên dưới được giữ để truy vết lịch sử; xem báo cáo tổng hợp để biết kết quả mới nhất.
+
 # Issue #2 — Stage 02 UAT follow-up
 
 2026-11-07. Base PR revision: `e638a9f`. G3 remains **not accepted**.
@@ -48,3 +50,8 @@ Rollback: revert this follow-up commit and restart the two application processes
 ## 2026-11-08 retest follow-up
 
 See [Stage 02 retest and fixes](STAGE02_RETEST_FIXES_20261108.md). The two direct-UAT defects (QL detail indicator and missing-branch HTTP 500) are fixed and covered by regressions. Current source/unit/API/SQL checks pass; full post-fix browser acceptance remains blocked until the frontend serves the new eight-file fingerprint. Public QR stays disabled; G3 owner acceptance remains pending. Historical results above are retained as snapshots.
+
+
+## 2026-11-08 browser follow-up after frontend restart
+
+The frontend now serves revision `4dc53554b14ca76cd37edd1e1794c6aa65a72c6b4620c2cfea54f80e9a67416e`. Full real-Chrome regression PASS 25/25 (exit 0), and direct Playwright MCP confirmed care datetime input/save, explicit login despite SSO, switching demo-a→demo-b and cross-tenant 403. See [care datetime/login fix evidence](CARE_DATETIME_LOGIN_FIX_20261108.md). This resolves the stale-frontend browser blocker recorded above; original checkpoints remain historical. No native OS IME, dedicated multi-membership browser or enabled public QR acceptance is claimed; owner G3 sign-off remains pending. No DB reset, infrastructure stop, main merge or production approval.

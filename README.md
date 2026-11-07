@@ -1,3 +1,5 @@
+> **Stage 02 — báo cáo chính:** [Báo cáo tổng hợp](docs/codex/STAGE02_REPORT.md), gồm kết quả mới nhất, lịch sử sửa lỗi, bằng chứng, giới hạn nghiệm thu và rollback.
+
 # LMS + CRM SaaS – Stage 02: CRM & Customer 360°
 
 > **LumaOS handoff (2026-11-07):** Start with [AGENTS.md](AGENTS.md) and [CODEX_START_HERE.md](CODEX_START_HERE.md). The [local review and Stage 03 plan](docs/codex/LOCAL_REVIEW_AND_STAGE03_PLAN_2026-11-07.md) reconciles the historical status below with current evidence: 53 live API checks and 13 HTTP OIDC assertions passed on the existing local demo stack. Full browser acceptance and reproducible integration remain open; Stage 03 is not approved yet.

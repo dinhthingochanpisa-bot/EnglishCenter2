@@ -1,3 +1,5 @@
+> **Báo cáo tổng hợp Stage 02:** [STAGE02_REPORT.md](STAGE02_REPORT.md). Nội dung bên dưới được giữ để truy vết lịch sử; xem báo cáo tổng hợp để biết kết quả mới nhất.
+
 # Stage 02 — direct Playwright MCP UAT
 
 Run: 2026-11-07–08, Asia/Bangkok. **19 PASS, 2 FAIL, 7 BLOCKED. G3 remains not accepted.**

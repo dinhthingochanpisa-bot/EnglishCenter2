@@ -52,6 +52,7 @@ def main():
         query = urllib.parse.parse_qs(urllib.parse.urlparse(response.url).query)
         check('Authorization Code requested', query.get('response_type') == ['code'])
         check('PKCE S256 requested', query.get('code_challenge_method') == ['S256'])
+        check('Explicit credentials requested despite prior SSO', query.get('prompt') == ['login'])
         parser = LoginForm()
         parser.feed(response.read().decode())
     check('Keycloak login form available', bool(parser.action))

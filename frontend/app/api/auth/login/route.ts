@@ -16,7 +16,7 @@ export async function GET() {
     };
     const challenge = createHash('sha256').update(pending.verifier).digest('base64url');
     const url = new URL(m.authorization_endpoint);
-    for (const [k,v] of Object.entries({client_id:clientId,response_type:'code',redirect_uri:`${origin()}/api/auth/callback`,scope:'openid profile email',state:pending.state,nonce:pending.nonce,code_challenge:challenge,code_challenge_method:'S256'}))url.searchParams.set(k,v);
+    for (const [k,v] of Object.entries({client_id:clientId,response_type:'code',redirect_uri:`${origin()}/api/auth/callback`,scope:'openid profile email',prompt:'login',state:pending.state,nonce:pending.nonce,code_challenge:challenge,code_challenge_method:'S256'}))url.searchParams.set(k,v);
     const response = NextResponse.redirect(url);
     response.cookies.set(PENDING_COOKIE,seal(pending),cookieOptions(600));
     return response;

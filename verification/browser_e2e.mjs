@@ -96,10 +96,16 @@ async function main(){
  check('Browser creates NEW lead without phone',await evaluate(`(${row()}).textContent.includes('Lead mới')`));
  await click('Giai đoạn',row());await select('Trạng thái mới','QUALIFIED');await fill('Cập nhật SĐT (để trống nếu không thay đổi)','0912345678');await submit();
  await waitFor(()=>evaluate(`(${row()})?.textContent.includes('QL – Có SĐT')`),'QL persisted');check('Browser qualifies lead through backend',true);
- await click('Chăm sóc',row());await fill('Nội dung','Synthetic browser care history');await submit();await click('Chi tiết',row());
+ await click('Chăm sóc',row());
+ await evaluate(`(()=>{const el=${field('Hẹn tiếp (tùy chọn)')};Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,'2026-11-10T14:30');el.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+ check('Care form retains local date and time',await evaluate(`(${field('Hẹn tiếp (tùy chọn)')}).value==='2026-11-10T14:30'`));
+ await fill('Nội dung','Synthetic browser care history');
+ check('Care follow-up survives other input changes',await evaluate(`(${field('Hẹn tiếp (tùy chọn)')}).value==='2026-11-10T14:30'`));
+ await submit();await click('Chi tiết',row());
  await waitFor(()=>evaluate(`document.body.textContent.includes('Synthetic browser care history')`),'care history');check('Browser care history persists',true);
  check('Qualified detail does not show missing-phone warning',await evaluate(`!document.querySelector('[role="dialog"]').textContent.includes('Chưa có SĐT hợp lệ')`));
  check('Lead detail is visible in dialog',await evaluate(`!!document.querySelector('[role="dialog"] .crm-detail')`));
+ check('Care follow-up persists as the selected instant',await evaluate(`fetch('/api/backend/v1/tenants/${tenant}/crm/leads').then(r=>r.json()).then(xs=>fetch('/api/backend/v1/tenants/${tenant}/crm/leads/'+xs.find(x=>x.fullName===${JSON.stringify(name)}).id)).then(r=>r.json()).then(d=>d.activities.find(x=>x.note==='Synthetic browser care history')?.followupAt===new Date('2026-11-10T14:30').toISOString())`));
  await key('Escape');await waitFor(noDialog,'detail closes with Escape');
  await click('Check-in',row());await submit();
  await navigate(base+`/t/${tenant}/crm/checkins`);await waitFor(()=>evaluate(`!!(${row()})`),'draft check-in');await click('Hoàn tất',row());
@@ -113,6 +119,13 @@ async function main(){
  const screenshot=await page.call('Page.captureScreenshot',{format:'png'});fs.writeFileSync(path.join(folder,'customer-360.png'),Buffer.from(screenshot.data,'base64'));
  const logout=await evaluate(`fetch('/api/auth/logout',{method:'POST',headers:{Origin:location.origin}}).then(r=>r.status)`);check('Logout accepted',logout===200);
  check('Logout invalidates session',await evaluate(`fetch('/api/auth/session').then(r=>r.json()).then(s=>s.authenticated===false)`));
+ // Preserve the Keycloak SSO cookie: explicit login must still display credentials.
+ await navigate(base+'/api/auth/login');
+ await waitFor(()=>evaluate(`!!document.querySelector('#password')`),'explicit login after app logout');
+ check('Login displays credentials despite existing SSO',await evaluate(`new URL(location.href).searchParams.get('prompt')==='login'`));
+ if(await evaluate(`!!document.querySelector('#reset-login')`))await evaluate(`document.querySelector('#reset-login').click()`);
+ await waitFor(()=>evaluate(`!!document.querySelector('#username')&&!document.querySelector('#username').readOnly`),'account switch after SSO');
+ check('Login allows choosing another account',true);
  await page.call('Network.clearBrowserCookies');await login('demo-b');
  await waitFor(()=>evaluate('location.pathname==="/t/22222222-2222-4222-8222-222222222222/crm/overview"'),'automatic tenant B entry');
  check('Single membership automatically opens Tenant B',true);

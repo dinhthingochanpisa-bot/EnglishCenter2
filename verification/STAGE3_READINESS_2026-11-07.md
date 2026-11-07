@@ -1,3 +1,5 @@
+> **Báo cáo tổng hợp Stage 02:** [STAGE02_REPORT.md](../docs/codex/STAGE02_REPORT.md). Nội dung bên dưới được giữ để truy vết lịch sử; xem báo cáo tổng hợp để biết kết quả mới nhất.
+
 # Stage 01–02 acceptance before Stage 3 — 2026-11-07
 
 Decision: **Stage 3 gate remains CLOSED.** The existing localhost stack supports real authenticated CRM operations. Reproducible builds, direct database acceptance, and interactive browser QA still need completion.
