@@ -7,11 +7,24 @@ import { fileURLToPath } from 'node:url';
 
 export const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export async function occupied(port){
- return new Promise((resolve,reject)=>{
+ // Windows can permit wildcard binds beside an existing specific-address listener.
+ // Probe each loopback family before attempting a bind.
+ for(const host of ['127.0.0.1','::1']){
+  const listening=await new Promise(resolve=>{
+   const socket=net.connect({port,host});
+   const done=value=>{socket.destroy();resolve(value);};
+   socket.once('connect',()=>done(true));socket.once('error',()=>done(false));
+   socket.setTimeout(500,()=>done(true));
+  });
+  if(listening)return true;
+ }
+ const attempt=host=>new Promise((resolve,reject)=>{
   const server=net.createServer();
   server.once('error',error=>error.code==='EADDRINUSE'?resolve(true):reject(error));
-  server.listen(port,'127.0.0.1',()=>server.close(()=>resolve(false)));
+  server.listen(port,host,()=>server.close(()=>resolve(false)));
  });
+ if(await attempt('127.0.0.1'))return true;
+ try{return await attempt('::1');}catch(error){if(['EAFNOSUPPORT','EADDRNOTAVAIL'].includes(error.code))return false;throw error;}
 }
 export async function preflight(ports=[3000,3001]){
  const busy=[];
@@ -53,7 +66,13 @@ export async function withOwnedServices(action,options={}){
   const deadline=Date.now()+(options.timeoutMs??90000);
   while(true){
    if(owned.some(child=>child.exitCode!==null||!child.pid))throw Error('BLOCKED: owned service exited before readiness; inspect verification/artifacts/backend.log and frontend.log');
-   try{await (options.ready??verifyExisting)();break;}catch(error){if(Date.now()>=deadline)throw Error('BLOCKED: readiness timeout; inspect owned service logs');}
+   try{
+    await (options.ready??verifyExisting)();
+    // A different server may have raced the preflight; don't accept its health while our child exits.
+    await new Promise(resolve=>setTimeout(resolve,250));
+    if(owned.some(child=>child.exitCode!==null||!child.pid))throw Error('Owned service exited');
+    break;
+   }catch(error){if(Date.now()>=deadline)throw Error('BLOCKED: readiness timeout; inspect owned service logs');}
    await new Promise(resolve=>setTimeout(resolve,500));
   }
   await action();

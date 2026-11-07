@@ -1,0 +1,41 @@
+name: Stage 02 dependency remediation candidate
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/dependency-candidate.yml'
+      - 'verification/dependency_candidate.mjs'
+jobs:
+  verify-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      RUN_BROWSER_E2E: 'true'
+      INCLUDE_GATE_USERS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Resolve targeted transitive patches and print reviewable lockfile
+        run: node verification/dependency_candidate.mjs
+      - name: Audit candidate (high/critical fail)
+        run: node verification/audit_dependencies.mjs backend
+      - name: Full integration and browser regression against candidate
+        run: |
+          python3 verification/generate_local_env.py
+          python3 - <<'PY'
+          import secrets
+          from pathlib import Path
+          with Path('infra/.env.test').open('a') as handle:
+              for name in ('GATE_SALES_PASSWORD', 'GATE_MANAGER_PASSWORD'):
+                  handle.write(name+'='+secrets.token_urlsafe(24)+'\n')
+          PY
+          bash verification/run_local_full_e2e.sh
+      - name: Sanitize evidence
+        if: always()
+        run: python3 verification/sanitize_artifacts.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-candidate-evidence
+          path: verification/artifacts/sanitized/

@@ -20,6 +20,12 @@ test('explicit reuse rejects unrelated HTTP services',async()=>{
  server.listen(0,'127.0.0.1');await once(server,'listening');const url=`http://127.0.0.1:${server.address().port}`;
  try{await assert.rejects(verifyExisting(url,url),/not recognizable/);}finally{server.close();await once(server,'close');}
 });
+test('IPv6-only listener is also detected',async t=>{
+ const server=http.createServer((req,res)=>res.end('ipv6'));
+ try{await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'::1',resolve);});}
+ catch(error){if(['EAFNOSUPPORT','EADDRNOTAVAIL'].includes(error.code)){t.skip('IPv6 unavailable');return;}throw error;}
+ try{assert.equal(await occupied(server.address().port),true);}finally{server.close();await once(server,'close');}
+});
 test('fresh lifecycle stops only owned services, including on action failure',async()=>{
  const external=http.createServer((req,res)=>res.end('keep-running'));
  external.listen(0,'127.0.0.1');await once(external,'listening');
