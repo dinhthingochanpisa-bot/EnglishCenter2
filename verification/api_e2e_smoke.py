@@ -57,6 +57,11 @@ def main():
     if not pwd_a or not pwd_b: raise SystemExit('Source infra/.env.test to supply demo credentials')
     code,_=req('GET',API+'/health/live');check('NestJS health',code,200)
     token_a=login('demo-a',pwd_a);token_b=login('demo-b',pwd_b)
+    api('GET','/v1/me/tenants',expected=401,step='Unauthenticated tenant discovery denied')
+    for token,tenant,label in [(token_a,A,'A'),(token_b,B,'B')]:
+        accessible=api('GET','/v1/me/tenants',token=token,step='Discover own tenants '+label)
+        check('Only own tenant returned '+label,[item['id'] for item in accessible],[tenant])
+        check('Tenant has friendly identity '+label,all(item['code'] and item['displayName'] for item in accessible),True)
     # unauthorized request (security enforcement in backend, not just UI)
     api('GET',f'/v1/tenants/{A}/crm/leads',expected=401,step='Unauthenticated CRM denied')
     api('GET',f'/v1/tenants/{A}/crm/leads',token='invalid.token.signature',expected=401,step='Invalid JWT denied')

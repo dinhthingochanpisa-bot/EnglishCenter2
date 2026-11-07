@@ -63,15 +63,21 @@ async function main(){
   await waitFor(()=>evaluate(`location.origin===${JSON.stringify(base)}&&!location.search.includes('auth_error')`),'OIDC callback');
   await waitFor(()=>evaluate(`fetch('/api/auth/session').then(r=>r.json()).then(s=>s.authenticated===true)`),'authenticated session');
  };
- await login('demo-a');check('Real browser Authorization Code + PKCE callback',true);
+ const expectedRevision=JSON.parse(fs.readFileSync(path.join(root,'frontend/lib/source-revision.json'),'utf8')).revision;
+ await navigate(base+'/');
+ await waitFor(()=>evaluate("document.readyState==='complete'"),'homepage ready');
+ check('Browser serves expected source revision',await evaluate("fetch('/api/version').then(r=>r.json()).then(x=>x.revision)")===expectedRevision);
+ await login('demo-a');
+ await waitFor(()=>evaluate('location.pathname==="/t/'+tenant+'/crm/overview"'),'automatic tenant A entry');
+ check('Single membership automatically opens Tenant A',true);check('Real browser Authorization Code + PKCE callback',true);
  await navigate(base+`/t/${tenant}/crm/leads`);
  await waitFor(()=>evaluate(`Array.from(document.querySelectorAll('button')).some(e=>e.textContent.trim()==='Lead mới')`),'CRM ready');
  await click('Lead mới');await waitFor(()=>evaluate(`document.activeElement===${field('Tên học sinh')}`),'initial input focus');
  check('Modal initially focuses first editable field',true);
- const name='Synthetic Browser '+Date.now();
+ const name='Synthetic Nguy\u1ec5n Th\u1ecb '+Date.now();
  await fill('Tên học sinh',name,true);
- await fill('Người liên hệ','Synthetic Parent Name Twenty',true);
- await fill('Số điện thoại (có số hợp lệ sẽ thành QL)','0912 345 678        ',true);
+ await fill('Người liên hệ','Synthetic Ph\u1ee5 huynh Nguy\u1ec5n Th\u1ecb',true);
+ await fill('Số điện thoại (có số hợp lệ sẽ thành QL)','0912 345 678         ',true);
  check('Twenty character input survives controlled rerenders in all three fields',true);
  await evaluate(`document.querySelector('[role="dialog"] .modal-header button').focus()`);await key('Tab',true);
  check('Shift+Tab wraps from first to last control',await evaluate(`document.activeElement===Array.from(document.querySelectorAll('[role="dialog"] button')).at(-1)`));
@@ -92,6 +98,8 @@ async function main(){
  await waitFor(()=>evaluate(`(${row()})?.textContent.includes('QL – Có SĐT')`),'QL persisted');check('Browser qualifies lead through backend',true);
  await click('Chăm sóc',row());await fill('Nội dung','Synthetic browser care history');await submit();await click('Chi tiết',row());
  await waitFor(()=>evaluate(`document.body.textContent.includes('Synthetic browser care history')`),'care history');check('Browser care history persists',true);
+ check('Lead detail is visible in dialog',await evaluate(`!!document.querySelector('[role="dialog"] .crm-detail')`));
+ await key('Escape');await waitFor(noDialog,'detail closes with Escape');
  await click('Check-in',row());await submit();
  await navigate(base+`/t/${tenant}/crm/checkins`);await waitFor(()=>evaluate(`!!(${row()})`),'draft check-in');await click('Hoàn tất',row());
  await fill('Họ tên phụ huynh','Synthetic Browser Parent');await fill('Điện thoại phụ huynh','0912345678');
@@ -105,6 +113,8 @@ async function main(){
  const logout=await evaluate(`fetch('/api/auth/logout',{method:'POST',headers:{Origin:location.origin}}).then(r=>r.status)`);check('Logout accepted',logout===200);
  check('Logout invalidates session',await evaluate(`fetch('/api/auth/session').then(r=>r.json()).then(s=>s.authenticated===false)`));
  await page.call('Network.clearBrowserCookies');await login('demo-b');
+ await waitFor(()=>evaluate('location.pathname==="/t/22222222-2222-4222-8222-222222222222/crm/overview"'),'automatic tenant B entry');
+ check('Single membership automatically opens Tenant B',true);
  const denied=await evaluate(`fetch('/api/backend/v1/tenants/${tenant}/crm/leads').then(r=>r.status)`);
  check('Tenant B browser session cannot read tenant A CRM',denied===403||denied===404);
 }

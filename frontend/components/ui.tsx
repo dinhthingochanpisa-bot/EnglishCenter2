@@ -2,8 +2,9 @@
 import React,{useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
+import sourceRevision from '@/lib/source-revision.json';
 import {ArrowRight, Bell, Building2, ChevronDown, CircleAlert, Command, ContactRound, Fingerprint, LayoutDashboard, LogOut, Menu, Plus, ScrollText, Search, ShieldCheck, UsersRound, X} from 'lucide-react';
-import {friendlyError} from '@/lib/api';
+import {api,Tenant,friendlyError} from '@/lib/api';
 export function Status({value}:{value:string}){
   const cls=/ACTIVE|Đang|Hoạt động/.test(value)?'green':/INVITED|ONBOARDING|TRIAL|Chờ/.test(value)?'amber':/SUSPENDED|DISABLED|CLOSED|LEFT|Dừng/.test(value)?'red':'gray';
   const names:Record<string,string>={ACTIVE:'Hoạt động',ONBOARDING:'Đang khởi tạo',SUSPENDED:'Tạm khóa',CLOSED:'Đã đóng',INVITED:'Chờ kích hoạt',LEFT:'Đã nghỉ',DISABLED:'Đã khóa'};
@@ -51,10 +52,12 @@ const crmLinks=[{id:'overview',label:'CRM tổng quan'},{id:'persons',label:'Per
 const sectionLinks=[{id:'overview',label:'Tổng quan',icon:LayoutDashboard},{id:'branches',label:'Cơ sở',icon:Building2},{id:'members',label:'Nhân sự & tài khoản',icon:UsersRound},{id:'roles',label:'Vai trò & phân quyền',icon:ShieldCheck},{id:'audit',label:'Nhật ký hoạt động',icon:ScrollText}];
 export function Shell({children,tenantId,tenantName='Không gian tổ chức',title,subtitle,actions}:{children:React.ReactNode;tenantId?:string;tenantName?:string;title:string;subtitle?:string;actions?:React.ReactNode}){
  const pathname=usePathname();const session=useSession();const [menu,setMenu]=useState(false);
+ const [organization,setOrganization]=useState<Tenant|null>(null);
+ useEffect(()=>{let active=true;setOrganization(null);if(tenantId)api<Tenant[]>('v1/me/tenants').then(items=>{if(active)setOrganization(items.find(t=>t.id===tenantId)??null)}).catch(()=>{});return()=>{active=false}},[tenantId]);
  async function logout(){await fetch('/api/auth/logout',{method:'POST',headers:{Origin:window.location.origin}});window.location.href='/'}
  return <div className="app-shell"><aside className={`sidebar ${menu?'sidebar-open':''}`}>
   <Link className="brand" href="/"><span className="brand-mark">L</span><span><strong>LumaOS</strong><small>EDUCATION CLOUD</small></span></Link>
-  <div className="workspace-box"><div className="workspace-avatar">{tenantId?'T':'S'}</div><div className="workspace-text"><strong>{tenantName}</strong><small>{tenantId?'Không gian tổ chức':'Quản trị nền tảng'}</small></div><ChevronDown size={15}/></div>
+  <div className="workspace-box"><div className="workspace-avatar">{tenantId?'T':'S'}</div><div className="workspace-text"><strong>{organization?.displayName||tenantName}</strong><small>{tenantId?(organization?.code||"Loading organization"):"Platform"}</small></div><ChevronDown size={15}/></div>
   <nav aria-label="Điều hướng" className="side-nav">
    <p className="nav-heading">KHÔNG GIAN LÀM VIỆC</p>
    {!tenantId?<><Link className={`nav-link ${pathname==='/'?'selected':''}`} href="/"><LayoutDashboard size={18}/>Trang chủ</Link><Link className={`nav-link ${pathname.startsWith('/platform')?'selected':''}`} href="/platform"><Building2 size={18}/>Tổ chức SaaS</Link></>:sectionLinks.map(({id,label,icon:Icon})=><Link key={id} className={`nav-link ${pathname.endsWith('/'+id)?'selected':''}`} href={`/t/${tenantId}/${id}`}><Icon size={18}/>{label}</Link>)}
@@ -62,7 +65,7 @@ export function Shell({children,tenantId,tenantName='Không gian tổ chức',ti
    {tenantId?<Link className="nav-link" href="/"><Command size={18}/>Đổi tổ chức</Link>:null}
   </nav>
   <div className="sidebar-foot"><div className="security-caption"><ShieldCheck size={16}/> Bảo vệ theo Tenant & vai trò</div><div className="profile"><div className="avatar">{session?.user?.name?.slice(0,1)?.toUpperCase()||'U'}</div><div className="profile-info"><strong>{session?.user?.name||'Người dùng'}</strong><small>{session?.user?.email||'OIDC account'}</small></div><button className="icon-btn" onClick={logout} title="Đăng xuất"><LogOut size={17}/></button></div></div>
- </aside><main className="main"><header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-btn" aria-label="Mở menu" onClick={()=>setMenu(!menu)}><Menu size={20}/></button><span className="breadcrumb">LumaOS</span><span className="breadcrumb-sep">/</span><span>{title}</span></div><div className="topbar-right"><span className="live-indicator"><span/> API LIVE</span><div className="top-avatar">{session?.user?.name?.slice(0,1)?.toUpperCase()||'U'}</div></div></header><div className="content"><div className="page-header"><div><div className="eyebrow">SAAS CONTROL CENTER</div><h1>{title}</h1>{subtitle&&<p>{subtitle}</p>}</div>{actions&&<div className="page-actions">{actions}</div>}</div>{session?.authenticated===false?<div className="auth-notice"><Fingerprint size={24}/><h2>Cần đăng nhập</h2><p>Đăng nhập OIDC để truy cập dữ liệu. Giao diện không lưu access token trong trình duyệt.</p><a href="/api/auth/login" className="btn btn-primary">Đăng nhập</a></div>:children}</div></main>
+ </aside><main className="main"><header className="topbar"><div className="topbar-left"><button className="mobile-menu icon-btn" aria-label="Mở menu" onClick={()=>setMenu(!menu)}><Menu size={20}/></button><span className="breadcrumb">LumaOS</span><span className="breadcrumb-sep">/</span><span>{title}</span></div><div className="topbar-right"><small title={sourceRevision.revision}>Build {sourceRevision.revision.slice(0,12)}</small><span className="live-indicator"><span/> API LIVE</span><div className="top-avatar">{session?.user?.name?.slice(0,1)?.toUpperCase()||'U'}</div></div></header><div className="content"><div className="page-header"><div><div className="eyebrow">SAAS CONTROL CENTER</div><h1>{title}</h1>{subtitle&&<p>{subtitle}</p>}</div>{actions&&<div className="page-actions">{actions}</div>}</div>{session?.authenticated===false?<div className="auth-notice"><Fingerprint size={24}/><h2>Cần đăng nhập</h2><p>Đăng nhập OIDC để truy cập dữ liệu. Giao diện không lưu access token trong trình duyệt.</p><a href="/api/auth/login" className="btn btn-primary">Đăng nhập</a></div>:children}</div></main>
  </div>
 }
 export function SectionHeading({title,desc,action}:{title:string;desc?:string;action?:React.ReactNode}){return <div className="section-heading"><div><h2>{title}</h2>{desc&&<p>{desc}</p>}</div>{action}</div>}

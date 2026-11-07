@@ -3,6 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
+    "predev": "node ../verification/write_source_revision.mjs",
+    "prebuild": "node ../verification/write_source_revision.mjs",
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",

@@ -46,6 +46,16 @@ import { CreateTenantDto,UpdateTenantDto,CreateBranchDto,UpdateBranchDto,CreateR
   });
  }
  async listTenants(a:Actor){this.platform(a);return this.db.provisioning.tenant.findMany({select:{id:true,code:true,displayName:true,status:true},take:100,orderBy:{createdAt:'desc'}});}
+ async myTenants(a:Actor){
+  // Existing identity directory read; membership checked separately through runtime RLS.
+  const candidates=await this.db.identity.tenant.findMany({where:{status:'ACTIVE'},select:{id:true,code:true,displayName:true,status:true},orderBy:{code:'asc'}});
+  const result:typeof candidates=[];
+  for(const tenant of candidates){
+   const member=await this.db.tenantTx(tenant.id,a.userId,tx=>tx.tenantMembership.findUnique({where:{tenantId_userId:{tenantId:tenant.id,userId:a.userId}},select:{status:true}}));
+   if(member?.status==='ACTIVE')result.push(tenant);
+  }
+  return result;
+ }
  async getTenant(t:string,a:Actor){uuid(t);return this.db.tenantTx(t,a.userId,async tx=>{
   await this.auth.require(tx,t,a,'tenant.read');
   // Identity read credential may select global tenant, but only after runtime membership is verified.

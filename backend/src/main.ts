@@ -8,11 +8,11 @@ import { ApiErrorFilter } from './prisma-errors.filter';
 import { AuthGuard } from './auth';
 import { Authorization } from './authorization';
 import { CoreService } from './tenant.service';
-import { PlatformController,TenantController } from './controllers';
+import { MeController,PlatformController,TenantController } from './controllers';
 import { CrmController,CrmPublicController } from './crm.controllers';
 import { CrmService } from './crm.service';
 @Controller() class HealthController { @Get('health/live') live(){return {ok:true};} }
-@Module({controllers:[HealthController,PlatformController,TenantController,CrmController,CrmPublicController],providers:[Db,AuthGuard,Authorization,CoreService,CrmService]})
+@Module({controllers:[HealthController,MeController,PlatformController,TenantController,CrmController,CrmPublicController],providers:[Db,AuthGuard,Authorization,CoreService,CrmService]})
 export class AppModule{}
 async function main(){
  const app=await NestFactory.create(AppModule,{bufferLogs:true});

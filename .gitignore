@@ -7,6 +7,7 @@ infra/.env.test
 
 infra/keycloak/import/*.json
 verification/artifacts/
+.playwright-mcp/
 
 # Generated local files and private environment variants.
 **/.env.*

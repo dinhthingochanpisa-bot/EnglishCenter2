@@ -60,7 +60,7 @@ jobs:
           npm run typecheck
           npm run build
           npm test
-          node --test ../verification/authorization.test.mjs ../verification/assignment.test.mjs ../verification/service_lifecycle.test.mjs
+          node --test ../verification/my_tenants.test.mjs ../verification/authorization.test.mjs ../verification/assignment.test.mjs ../verification/service_lifecycle.test.mjs
       - name: PostgreSQL tenant isolation + FK tests
         run: |
           PGUSER=app_runtime PGPASSWORD='ci-runtime-only' psql -X -v ON_ERROR_STOP=1 -f verification/rls_smoke.sql
