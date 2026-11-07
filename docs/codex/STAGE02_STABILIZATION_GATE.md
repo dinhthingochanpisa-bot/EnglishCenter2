@@ -33,7 +33,7 @@ All 17 Engineering v2.0 documents were read, including Stage 03, API contracts, 
 | Actual browser on this machine | BLOCKED | Automatic approval review rejected launching Chrome: sandbox approval required but disabled in this session. Actual browser evidence was obtained separately in CI |
 | Actual browser in CI | PASS 15/15 | [CI run 42362559449](https://github.com/dinhthingochanpisa-bot/EnglishCenter2/actions/runs/42362559449), full-browser-integration job, commit d99f63f |
 | Restricted-role API integration in CI | PASS 9/9 | Same CI run: separate tenant, branch-scoped read denial, no-assignment permission, invalid assignee branch, unchanged rowVersion |
-| Dependency audit in CI | Original backend FAIL; remediated candidate PASS high/critical threshold | Original: 14 total, 10 high, 4 moderate. Tested candidate: 0 high/critical, 5 moderate; package/lockfile imported after full regression. See [dependency review](STAGE02_DEPENDENCY_REVIEW.md) |
+| Dependency audit in CI | Original backend FAIL; remediated candidate and committed lockfile PASS high/critical threshold | Original: 14 total, 10 high, 4 moderate. Tested/committed resolution: 0 high/critical, 5 moderate. Frontend: 0 findings. [Committed-lock CI run](https://github.com/dinhthingochanpisa-bot/EnglishCenter2/actions/runs/42363210972). See [dependency review](STAGE02_DEPENDENCY_REVIEW.md) |
 | Prisma/migrations/RLS/FK and both builds in CI | PASS | Same run, postgres-and-apps and full-browser-integration; tests use runtime DB role for RLS |
 | Native Windows build/SQL | BLOCKED locally | Existing platform/download/Engine restrictions remain; CI results above are separate positive evidence |
 
@@ -57,7 +57,7 @@ The first separate-realm test failed HTTP 409 because default subjects already e
 
 ## Gate and Stage 03
 
-Do not open Stage 03 on the strength of API counts alone. Browser, clean-environment SQL/RLS/build, restricted-role API and remediated dependency candidate evidence now exist. Remaining: confirm final committed lockfile CI, explicit decision for QR-disabled acceptance scope and product-owner UAT sign-off (G3). Five moderate dependency findings remain tracked for security release review; no production approval is implied.
+Do not open Stage 03 on the strength of API counts alone. Browser, clean-environment SQL/RLS/build, restricted-role API and remediated dependency evidence now exist. Remaining: final full branch CI, explicit decision for QR-disabled acceptance scope and product-owner UAT sign-off (G3). Five moderate dependency findings remain tracked for security release review; no production approval is implied.
 
 Only after the gate is met, produce the Stage 03 Implementation Plan from Engineering v2.0: Catalog→Pricing→Quote/Approval slices, additive migrations/RLS, OpenAPI 3.1, typed clients, decimal golden fixtures, immutable snapshots, rollout and rollback.
 

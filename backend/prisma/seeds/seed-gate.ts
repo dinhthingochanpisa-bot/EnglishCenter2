@@ -5,6 +5,8 @@ const T='33333333-3333-4333-8333-333333333333';
 const id=(n:number)=>`33333333-0000-4000-8000-${String(n).padStart(12,'0')}`;
 async function main(){
  if(process.env.ALLOW_GATE_SEED!=='true'||process.env.NODE_ENV!=='test')throw Error('Explicit synthetic gate seed opt-in required');
+ const existing=await db.tenant.findUnique({where:{id:T}});
+ if(existing&&existing.code!=='stage02-gate')throw Error('Reserved gate tenant ID belongs to unrelated data; refusing to seed');
  await db.tenant.upsert({where:{id:T},create:{id:T,code:'stage02-gate',legalName:'Synthetic Gate',displayName:'Synthetic Gate',status:'ACTIVE'},update:{}});
  const users=['cccccccc-cccc-4ccc-8ccc-cccccccccccc','dddddddd-dddd-4ddd-8ddd-dddddddddddd','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'];
  for(const [i,u] of users.entries())await db.platformUser.upsert({where:{id:u},create:{id:u,authSubject:u,displayName:'Synthetic Gate '+i,status:'ACTIVE'},update:{}});
