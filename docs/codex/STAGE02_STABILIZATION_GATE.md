@@ -2,7 +2,9 @@
 
 Date: 2026-11-07. Source baseline: `9f48770`; latest main documentation reviewed at `40e138d1dde08d3f95befa73f22572407e96ae41`.
 
-Status: **IN PROGRESS; not signed off. Stage 03 implementation has not started.**
+Status: **AUTOMATED CHECKS PASS; implemented awaiting product-owner UAT and QR scope decision. Stage 03 implementation has not started.**
+
+Final code evidence: commit `a8ca2922f048ecbcb13c9e1c4ed207357d480e8f`, [CI run 42363351604](https://github.com/dinhthingochanpisa-bot/EnglishCenter2/actions/runs/42363351604): all four jobs PASS (backend audit, frontend audit, PostgreSQL/apps, full browser integration). This evidence update changes documentation only.
 
 All 17 Engineering v2.0 documents were read, including Stage 03, API contracts, business/golden rules, acceptance matrix and ADR-201–223. Missing v2 documents were added locally without replacing existing source. No database reset, migration reset, volume deletion or production-policy change was performed.
 
@@ -31,7 +33,7 @@ All 17 Engineering v2.0 documents were read, including Stage 03, API contracts, 
 | Fresh realm direct login | PASS | Separate realm `lms-demo-gate-03850adae303`; both accounts authenticate without manual email changes; `fresh-realm.log` |
 | Existing port handling | PASS | Default preflight correctly returns BLOCKED without stopping 3000/3001; explicit reuse recognizes current stack |
 | Actual browser on this machine | BLOCKED | Automatic approval review rejected launching Chrome: sandbox approval required but disabled in this session. Actual browser evidence was obtained separately in CI |
-| Actual browser in CI | PASS 15/15 | [CI run 42362559449](https://github.com/dinhthingochanpisa-bot/EnglishCenter2/actions/runs/42362559449), full-browser-integration job, commit d99f63f |
+| Actual browser in CI | PASS 15/15 | [Final code CI run 42363351604](https://github.com/dinhthingochanpisa-bot/EnglishCenter2/actions/runs/42363351604), full-browser-integration job |
 | Restricted-role API integration in CI | PASS 9/9 | Same CI run: separate tenant, branch-scoped read denial, no-assignment permission, invalid assignee branch, unchanged rowVersion |
 | Dependency audit in CI | Original backend FAIL; remediated candidate and committed lockfile PASS high/critical threshold | Original: 14 total, 10 high, 4 moderate. Tested/committed resolution: 0 high/critical, 5 moderate. Frontend: 0 findings. [Committed-lock CI run](https://github.com/dinhthingochanpisa-bot/EnglishCenter2/actions/runs/42363210972). See [dependency review](STAGE02_DEPENDENCY_REVIEW.md) |
 | Prisma/migrations/RLS/FK and both builds in CI | PASS | Same run, postgres-and-apps and full-browser-integration; tests use runtime DB role for RLS |
@@ -57,7 +59,7 @@ The first separate-realm test failed HTTP 409 because default subjects already e
 
 ## Gate and Stage 03
 
-Do not open Stage 03 on the strength of API counts alone. Browser, clean-environment SQL/RLS/build, restricted-role API and remediated dependency evidence now exist. Remaining: final full branch CI, explicit decision for QR-disabled acceptance scope and product-owner UAT sign-off (G3). Five moderate dependency findings remain tracked for security release review; no production approval is implied.
+Do not open Stage 03 on the strength of API counts alone. Browser, clean-environment SQL/RLS/build, restricted-role API and remediated dependency evidence now exist; final code CI passed all four jobs. Remaining: explicit decision for QR-disabled acceptance scope and product-owner UAT sign-off (G3). Five moderate dependency findings remain tracked for security release review; no production approval is implied.
 
 Only after the gate is met, produce the Stage 03 Implementation Plan from Engineering v2.0: Catalog→Pricing→Quote/Approval slices, additive migrations/RLS, OpenAPI 3.1, typed clients, decimal golden fixtures, immutable snapshots, rollout and rollback.
 
