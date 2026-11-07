@@ -1,3 +1,5 @@
+> **Kiểm tra Skills/Stage Gate mới nhất:** [Xem mục 10](#skills-stage-gate-20261108). G3 vẫn chờ nghiệm thu của chủ sản phẩm.
+
 # LumaOS — Báo cáo tổng hợp Stage 02
 
 Cập nhật: **2026-11-08, Asia/Bangkok**. Repository: [EnglishCenter2](https://github.com/dinhthingochanpisa-bot/EnglishCenter2). Nhánh làm việc: `fix/stage02-stabilization-gate`; [PR #1](https://github.com/dinhthingochanpisa-bot/EnglishCenter2/pull/1) vẫn Draft.
@@ -187,3 +189,92 @@ Không đưa `.env`, generated realm credentials, gate.env, token/cookie/browser
 | [VERIFICATION_STATUS.md](../../verification/VERIFICATION_STATUS.md) | Stage 01 static/security foundation và pilot checklist lịch sử |
 
 Các snapshot `verification/static_report.txt` và `verification/logic_report.txt` được đối chiếu như lịch sử static/logic, không thay log mới. Contract/tiêu chí tiếp tục nằm ở [ACCEPTANCE_TESTS.md](../ACCEPTANCE_TESTS.md), [API_STAGE02.md](../API_STAGE02.md), [STAGE02_ERD.md](../STAGE02_ERD.md) và [TEST_RUNBOOK.md](TEST_RUNBOOK.md); đó là tài liệu kỹ thuật/runbook, không phải kết quả test bổ sung.
+
+
+<a id="skills-stage-gate-20261108"></a>
+## 10. Kiểm tra bằng Skills mới và Stage Gate — 2026-11-08
+
+**Quyết định: AWAITING OWNER UAT — chưa nghiệm thu G3, chưa merge PR #1, chưa mở Stage 03.** Báo cáo này ghi bằng chứng mới, không dùng lại PASS lịch sử làm kết quả vừa chạy.
+
+### Đồng bộ và nhận diện Skills
+
+Remote HEAD đã kiểm tra lại: `159115090985bb53f62127a7c0bad0d49b791166`, nhánh `fix/stage02-stabilization-gate`. Sau kiểm tra hash local với baseline đã xuất bản, đồng bộ đúng bốn SKILL.md mới và hai cập nhật AGENTS/CODEX_START_HERE. Đối chiếu **170 file tracked khớp byte/blob remote** trước khi ghi phần báo cáo này. Không ghi đè bản vá local, không sửa app/schema, không thay env hoặc reset DB.
+
+**Giới hạn Git:** `.git` bị ẩn trong sandbox; `git status`/HEAD không đọc được. Yêu cầu đọc metadata ngoài sandbox đã bị hủy khi lượt làm việc bị ngắt. Đây là đồng bộ nội dung đã xác minh, **không tuyên bố `git pull`/index/HEAD local đã cập nhật thành công**. Không tự git init, reset, stash, merge hoặc chỉnh metadata để né giới hạn. Nếu cần Git HEAD local, kiểm tra từ terminal Git thật trước khi pull và bảo toàn các thay đổi chưa commit.
+
+Phiên sau khi tiếp tục đã có đủ bốn entry trong **Available skills**, không chỉ đọc file thủ công: `$lumaos-stage-gate`, `$lumaos-tenant-security`, `$lumaos-business-rules`, `$lumaos-browser-uat`. Frontmatter name/description và hash file đã kiểm tra. Đã áp dụng browser-uat cho MCP, stage-gate cho đối chiếu; tenant-security cho scope/negative cases. Business-rules được nạp và giữ nguyên giới hạn: chưa triển khai Stage 03, chưa chốt ADR-201/202/203/223 hay chính sách thương mại.
+
+### Playwright MCP — thực chạy localhost
+
+Source fingerprint `/api/version` và chín file vẫn khớp `4dc53554b14ca76cd37edd1e1794c6aa65a72c6b4620c2cfea54f80e9a67416e`; `/health/live` 200. Chrome 157/Linux, timezone Asia/Bangkok; context A 1440×1000, B/sales 780×493, cookies tách biệt. Thực thi chính 2026-11-07 18:20–18:28 UTC (2026-11-08 theo Asia/Bangkok); source/CI/health được kiểm tra lại khi tiếp tục.
+
+**21 nhóm PASS, 0 FAIL chức năng, 3 BLOCKED, 2 NOT_RUN.** Đây là nhóm kịch bản MCP, không cộng với số assertion của API/CI.
+
+| ID | Kiểm tra MCP | Trạng thái | Quan sát |
+|---|---|---|---|
+| MCP-01 | Source đang chạy | PASS | /api/version và hash chín file khớp; health 200 |
+| MCP-02 | Đăng nhập A | PASS | OIDC Code+PKCE thật; tự vào Tenant A, không nhập UUID |
+| MCP-03 | Nguồn khách hàng | PASS | Tạo Source synthetic qua UI, thấy trong bảng và chọn được khi tạo Lead |
+| MCP-04 | Unicode/focus/caret | PASS | Gõ ≥20 ký tự ở ba input; kiểm focus, caret và giá trị sau từng ký tự |
+| MCP-05 | Bàn phím modal | PASS | Tab/Shift+Tab wrap, Escape, trả focus launcher, reopen không giữ form cũ |
+| MCP-06 | Mất mạng | PASS | Context offline thật; có lỗi, giữ input/modal, chỉ lưu khi online |
+| MCP-07 | Lead NEW | PASS | Tạo Lead không phone; danh sách NEW |
+| MCP-08 | Stage sai | PASS | NEW→CONVERTED bị 400, form có lỗi và giữ lựa chọn |
+| MCP-09 | Phiên bản cũ | PASS | API writer synthetic tăng version; submit UI cũ bị 409, phone giữ nguyên |
+| MCP-10 | QL | PASS | Reload version rồi thêm phone hợp lệ → QUALIFIED |
+| MCP-11 | Chi tiết đầu/cuối bảng | PASS | Mở đúng Person trong viewport, Escape trả focus |
+| MCP-12 | Lỗi chi tiết | PASS | Inject 503 an toàn ở browser; alert hiện, không giữ detail cũ; route mock được gỡ |
+| MCP-13 | Ngày giờ chăm sóc | PASS | Nhập/sửa/xóa, ArrowUp/Down và rerender giữ giờ; POST 201; 14:30 Bangkok→07:30Z; hiển thị lại 14:30 |
+| MCP-14 | Check-in/360 | PASS | Tạo nháp và complete qua UI; CUSTOMER, CONVERTED, COMPLETED, đúng phụ huynh |
+| MCP-15 | Đối chiếu dữ liệu | PASS | Person ID không đổi, một guardian link; FIRST_TOUCH/care timestamp giữ lại; phone được bảo vệ |
+| MCP-16 | Đăng nhập lại khi còn SSO | PASS | Logout rồi login hỏi mật khẩu; Restart login cho đổi username, PKCE S256 giữ nguyên |
+| MCP-17 | Tenant B | PASS | Context độc lập, login demo-b tự vào B; discovery chỉ B |
+| MCP-18 | B không đọc A | PASS | URL có lỗi quyền và không có hàng test; list/detail/Person API 403, không lộ tên test |
+| MCP-19 | Vai trò branch | PASS | gate-sales chỉ thấy Person 1; không thấy Person 2; read branch khác và assign thiếu quyền đều 403, version không đổi |
+| MCP-20 | QR tắt | PASS | API invite 503, giữ PUBLIC_INTAKE_ENABLED=false |
+| MCP-21 | Logout | PASS | App sessions A/B/sales đều mất xác thực; helper credentials đã thoát |
+| MCP-B01 | Native Vietnamese IME | BLOCKED | Headless Linux không chứng minh composition của bộ gõ Windows/OS người dùng |
+| MCP-B02 | Chooser/no/inactive membership UI | BLOCKED | Chưa có dedicated browser fixtures; service regression đã đạt |
+| MCP-B03 | QR-enabled CRM-11–13 | BLOCKED | Chưa được duyệt bật; cần quyết định nghiệm thu trong phạm vi QR tắt hoặc làm privacy/abuse acceptance trước |
+| MCP-N01 | Hết hạn tự nhiên trong browser | NOT_RUN | Logout và isolated expiry đã test; không chờ hết hạn tự nhiên |
+| MCP-N02 | Control ẩn/disabled chuyên biệt | NOT_RUN | Normal modal trap được test; chưa tạo scenario riêng hidden/disabled |
+
+Chi tiết Lead đầu/cuối bảng và injected 503 đã được kiểm tra trong viewport. Một lần lookup textarea bằng label bị timeout; snapshot vẫn thấy ngày giờ giữ đúng. Rerun bằng textbox role quan sát từ UI đã sửa tháng bằng ArrowUp/Down, giữ dữ liệu qua rerender, lưu 201 và readback/hiển thị đúng giờ. Không có app-code fix trong lượt kiểm tra này; lỗi harness và kết quả rerun được ghi riêng.
+
+### CI và các lớp kiểm thử khác
+
+[GitHub Actions run 42400018822](https://github.com/dinhthingochanpisa-bot/EnglishCenter2/actions/runs/42400018822) thuộc **đúng SHA 1591150**: cả 4 job `dependency-audit (backend)`, `dependency-audit (frontend)`, `postgres-and-apps`, `full-browser-integration` completed/success. Đã đọc từng job/step, không chỉ aggregate badge. PR #1 vẫn Draft/open và `merged=false` khi kiểm tra lại. Không chạy lại Chrome/CDP local trong lượt này; CI browser hiện tại, MCP trực tiếp hiện tại và Chrome 25/25 local ở lượt trước là ba nguồn bằng chứng tách biệt.
+
+Local vừa chạy: static 15/15, logic 9/9, Stage 02 syntax/schema/rules PASS; regression 22/22, realm generator 5/5, backend unit 6/6, backend/frontend typecheck và build PASS. API wrapper exit 0: main 80, extended 45, restricted-role 9, HTTP OIDC **14 assertions** (không cộng dòng tổng kết). Năm SQL smoke nhóm PASS bằng runtime role cho RLS/grants/audit và owner riêng cho constraint/trigger; toàn bộ test SQL rollback, không replay migration hay seed lại DB. Build tự đổi next-env imports; đã chỉ hoàn nguyên phần generated về hash trước chạy.
+
+Audit mới: backend **6 moderate, 0 high/critical**; frontend **0 findings**. Không đổi dependency để ép xanh. Không đọc PASS cũ thành số vulnerability hiện tại. Logs, exit codes, summary và screenshot đã loại secrets nằm trong ignored `verification/artifacts/skills-uat-20261108/`; không publish gate.env, browser profiles, cookie, password, HAR hoặc snapshot màn hình login. Helper credentials local đã thoát; các app session thử đã logout. API/UI chỉ thêm fixture synthetic Source/Lead/care/Check-in; không dọn/reset dữ liệu.
+
+### Đối chiếu acceptance và lỗi còn mở
+
+- CRM-01–10, CRM-14–20: các ca tương ứng có bằng chứng API/service/SQL và MCP mới; xem ma trận mục 6 và `summary.json` của lượt này. Riêng concurrency/duplicate completion và immutable timestamp được API kiểm tra, không gọi đó là thao tác UI đồng thời.
+- CRM-11–13: vẫn BLOCKED cho QR-enabled, chưa có quyết định chấp nhận phạm vi QR tắt. CRM-19 (503 khi tắt) PASS không đồng nghĩa CRM-11–13 PASS.
+- Issue #2 vẫn **OPEN**. Bốn vấn đề kỹ thuật ban đầu (auto-entry tenant, tenant identity, focus, detail modal) đã có bằng chứng service/API/browser tương ứng, nhưng chưa được owner xác nhận đóng. Multi/no/inactive-membership UI fixture và native IME còn thiếu; service tests tương ứng không thay browser.
+- Nội dung mô tả PR/Issue vẫn nhắc c66/404 và năm moderate theo lịch sử; không dùng các dòng đó làm trạng thái hiện tại. Cần căn lại mô tả khi chuẩn bị owner sign-off, không tự đóng issue hay thay đổi trạng thái PR trong lượt này.
+- Git metadata/pull local vẫn BLOCKED; đây là giới hạn đồng bộ Git, không phải một lỗi chức năng CRM.
+
+### G0–G5 và bước nghiệm thu của chủ sản phẩm
+
+| Gate | Trạng thái | Điều kiện còn thiếu |
+|---|---|---|
+| G0 | SPEC REVIEWED, QR scope OPEN | Chốt nghiệm thu Stage 02 với QR tắt hay yêu cầu làm tiếp enabled QR |
+| G1 | PASS trong phạm vi source/unit/build đã chạy | Giữ đúng source/CI SHA khi review |
+| G2 | PASS trong phạm vi Stage 02 đã kiểm thử | Các phần NOT_RUN/BLOCKED vẫn được công khai, không tự thu hẹp scope |
+| G3 | **AWAITING OWNER UAT** | Owner kiểm thử, xác nhận theo vai trò và quyết định các gap/scopes |
+| G4 | BLOCKED | Security/privacy/legal/ops, residual moderate, backup/performance/monitoring trước pilot |
+| G5 | NOT APPROVED | Chưa có production approval |
+
+Checklist owner trên localhost (đây là bước tiếp theo, **chưa phải chấp thuận đã có**):
+
+1. Đăng xuất/đăng nhập A và B; kiểm tên/code tenant và mỗi người chỉ vào tổ chức của mình; thử URL tenant còn lại.
+2. Lead mới: gõ tiếng Việt bằng bộ gõ OS thật, tên/contact/phone ≥20 ký tự; Tab/Shift+Tab/Escape/reopen, focus không nhảy.
+3. Tạo NEW không phone, thêm phone thành QL; mở detail đầu/cuối bảng và kiểm đúng người, nguồn, masking và lịch sử.
+4. Chăm sóc: nhập/sửa/xóa ngày giờ, lưu, kiểm giờ hiển thị; thử lỗi mạng hoặc stale update để thấy thông báo và input giữ nguyên.
+5. Hoàn tất Check-in, xem Customer 360 cùng Person/phụ huynh/lịch sử; thử tài khoản hạn chế branch theo vai trò thực tế.
+6. Chốt scope QR, xử lý hoặc chấp nhận hoãn rõ ràng các gap multi-membership/IME/NOT_RUN; ghi quyết định G3 và issue nào được đóng. Chưa merge hoặc sang Stage 03 trước quyết định này.
+
+Không thay đổi quyền runtime, OIDC/PKCE, RLS/FK, policy hay business defaults. Không có migration/deploy để rollback. Đồng bộ file có bản sao baseline ignored; phần thay đổi local sau sync chủ yếu là báo cáo này và bằng chứng. Không commit/push báo cáo mới hoặc thay đổi PR/Issue từ lượt audit nếu chưa được yêu cầu.
